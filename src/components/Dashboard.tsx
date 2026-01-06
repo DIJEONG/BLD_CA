@@ -8,6 +8,7 @@ import { allWordSets, getWordSetsByGrade } from '@/data/words';
 import LearningPage from './learning/LearningPage';
 import WordSetEditor from './custom/WordSetEditor';
 import LearningCalendar from './LearningCalendar';
+import GuidePage from './GuidePage';
 import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
 import { getCanadaDate, getTodayString } from '@/lib/date';
 import { Word } from '@/types';
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [isWrongWordsMode, setIsWrongWordsMode] = useState(false);
   const [customWords, setCustomWords] = useState<Word[] | null>(null);
   const [editingWordSetId, setEditingWordSetId] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
   const [isCreatingWordSet, setIsCreatingWordSet] = useState(false);
   const [newWordSetName, setNewWordSetName] = useState('');
   const [dateStr, setDateStr] = useState<string | null>(null);
@@ -151,6 +153,11 @@ export default function Dashboard() {
     );
   }
 
+  // 가이드 화면
+  if (showGuide) {
+    return <GuidePage onBack={() => setShowGuide(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* 헤더 */}
@@ -163,16 +170,24 @@ export default function Dashboard() {
                 {dateStr}
               </p>
             </div>
-            <button
-              className="tag hover:bg-black hover:text-white transition-colors"
-              onClick={() => {
-                if (confirm('모든 데이터를 초기화할까요?')) {
-                  resetAll();
-                }
-              }}
-            >
-              RESET
-            </button>
+            <div className="flex gap-2">
+              <button
+                className="tag hover:bg-black hover:text-white transition-colors"
+                onClick={() => setShowGuide(true)}
+              >
+                GUIDE
+              </button>
+              <button
+                className="tag hover:bg-black hover:text-white transition-colors"
+                onClick={() => {
+                  if (confirm('모든 데이터를 초기화할까요?')) {
+                    resetAll();
+                  }
+                }}
+              >
+                RESET
+              </button>
+            </div>
           </div>
         </div>
       </header>
