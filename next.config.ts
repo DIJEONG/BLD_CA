@@ -12,5 +12,4 @@ const nextConfig: NextConfig = {
   turbopack: {},
 };
 
-// @ts-expect-error - next-pwa types are incompatible with Next.js 16
 export default withPWA(nextConfig);
