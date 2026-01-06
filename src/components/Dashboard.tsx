@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,21 @@ export default function Dashboard() {
   const [editingWordSetId, setEditingWordSetId] = useState<string | null>(null);
   const [isCreatingWordSet, setIsCreatingWordSet] = useState(false);
   const [newWordSetName, setNewWordSetName] = useState('');
+  const [dateStr, setDateStr] = useState('');
+  const [todayString, setTodayString] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 클라이언트에서만 캐나다 시간대 적용
+  useEffect(() => {
+    const today = getCanadaDate();
+    setDateStr(today.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    }));
+    setTodayString(getTodayString());
+  }, []);
 
   const profile = useStore((state) => state.profile);
   const currentStreak = useStore((state) => state.currentStreak);
@@ -124,14 +138,6 @@ export default function Dashboard() {
       />
     );
   }
-
-  const today = getCanadaDate();
-  const dateStr = today.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -277,7 +283,7 @@ export default function Dashboard() {
                       ? Math.max((stat.wordsStudied / dailyGoal) * 100, 10)
                       : 0;
                     const day = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][new Date(stat.date).getDay()];
-                    const isToday = stat.date === getTodayString();
+                    const isToday = stat.date === todayString;
 
                     return (
                       <div
