@@ -50,6 +50,27 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     return undefined;
   }, [wordSetId, getCustomWordSets]);
 
+  // 모든 단어장(기본 + 커스텀)에서 단어 ID로 검색
+  const getAllWordsByIds = useCallback((wordIds: string[]): Word[] => {
+    const builtInWords = getWordsByIds(wordIds);
+    const foundIds = new Set(builtInWords.map(w => w.id));
+
+    // 커스텀 단어장에서도 검색
+    const customSets = getCustomWordSets();
+    const customWords: Word[] = [];
+
+    for (const ws of customSets) {
+      for (const word of ws.words) {
+        if (wordIds.includes(word.id) && !foundIds.has(word.id)) {
+          customWords.push(word);
+          foundIds.add(word.id);
+        }
+      }
+    }
+
+    return [...builtInWords, ...customWords];
+  }, [getCustomWordSets]);
+
   const {
     isActive,
     words,
@@ -86,7 +107,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
       if (wrongWordsMode) {
         const wrongProgress = getWrongWords();
         const wrongWordIdsArray = wrongProgress.map(p => p.wordId);
-        const wrongWordObjects = getWordsByIds(wrongWordIdsArray);
+        const wrongWordObjects = getAllWordsByIds(wrongWordIdsArray);
 
         setReviewWordIds(new Set(wrongWordIdsArray));
         setPreviewWords(wrongWordObjects);
@@ -112,7 +133,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         setInitialized(true);
       }
     }
-  }, [wordSet, initialized, dailyGoal, getWordsForReview, wrongWordsMode, getWrongWords]);
+  }, [wordSet, initialized, dailyGoal, getWordsForReview, wrongWordsMode, getWrongWords, getAllWordsByIds]);
 
   useEffect(() => {
     if (isActive && (phase === 'flashcard' || phase === 'typing')) {
