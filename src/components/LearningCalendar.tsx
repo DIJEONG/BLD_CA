@@ -2,12 +2,17 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
+import { allWordSets } from '@/data/words';
+import { Word } from '@/types';
 
 export default function LearningCalendar() {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [today, setToday] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const getMonthlyStats = useStore((state) => state.getMonthlyStats);
+  const sessions = useStore((state) => state.sessions);
+  const customWordSets = useStore((state) => state.customWordSets);
   const profile = useStore((state) => state.profile);
   const dailyGoal = profile?.dailyWordCount || 20;
 
@@ -60,12 +65,54 @@ export default function LearningCalendar() {
     return days;
   }, [year, month, monthlyStats]);
 
+  // 선택된 날짜의 학습 단어 목록
+  const selectedDateWords = useMemo(() => {
+    if (!selectedDate) return [];
+
+    // 해당 날짜의 세션들
+    const dateSessions = sessions.filter(s => s.date === selectedDate);
+    if (dateSessions.length === 0) return [];
+
+    // 모든 단어 ID 수집 (중복 제거)
+    const wordIds = new Set<string>();
+    const wordResults: { wordId: string; knew: boolean }[] = [];
+
+    dateSessions.forEach(session => {
+      session.answers.forEach(answer => {
+        if (!wordIds.has(answer.wordId)) {
+          wordIds.add(answer.wordId);
+          wordResults.push({ wordId: answer.wordId, knew: answer.knew });
+        }
+      });
+    });
+
+    // 단어 ID로 단어 정보 조회
+    const allWords = [
+      ...allWordSets.flatMap(ws => ws.words),
+      ...customWordSets.flatMap(ws => ws.words),
+    ];
+
+    const wordMap = new Map<string, Word>();
+    allWords.forEach(w => wordMap.set(w.id, w));
+
+    return wordResults.map(result => ({
+      word: wordMap.get(result.wordId),
+      knew: result.knew,
+    })).filter(item => item.word !== undefined) as { word: Word; knew: boolean }[];
+  }, [selectedDate, sessions, customWordSets]);
+
   const handlePrevMonth = () => {
     setCurrentDate(new Date(year, month - 2, 1));
   };
 
   const handleNextMonth = () => {
     setCurrentDate(new Date(year, month, 1));
+  };
+
+  const handleDateClick = (dateStr: string, hasActivity: boolean) => {
+    if (hasActivity) {
+      setSelectedDate(selectedDate === dateStr ? null : dateStr);
+    }
   };
 
   const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
@@ -144,6 +191,7 @@ export default function LearningCalendar() {
           const achievedGoal = day.wordsStudied >= dailyGoal;
           const isSunday = index % 7 === 0;
           const isSaturday = index % 7 === 6;
+          const isSelected = day.dateStr === selectedDate;
 
           return (
             <div
@@ -153,9 +201,11 @@ export default function LearningCalendar() {
                 ${index % 7 !== 6 ? 'border-r border-black' : ''}
                 ${index < calendarData.length - 7 || (index >= calendarData.length - 7 && Math.floor(index / 7) < Math.floor((calendarData.length - 1) / 7)) ? 'border-b border-black' : ''}
                 ${isToday ? 'bg-gray-100' : ''}
-                ${hasActivity && achievedGoal ? '' : ''}
+                ${hasActivity ? 'cursor-pointer hover:opacity-80' : ''}
+                ${isSelected ? 'ring-2 ring-inset ring-black' : ''}
               `}
               style={hasActivity && achievedGoal ? { backgroundColor: 'var(--accent-teal-light)' } : {}}
+              onClick={() => day.date && handleDateClick(day.dateStr, hasActivity)}
             >
               {day.date && (
                 <>
@@ -186,6 +236,45 @@ export default function LearningCalendar() {
           );
         })}
       </div>
+
+      {/* 선택된 날짜의 단어 목록 */}
+      {selectedDate && selectedDateWords.length > 0 && (
+        <div className="border-t-2 border-black">
+          <div className="border-b border-black px-4 py-2 flex justify-between items-center bg-gray-50">
+            <span className="text-sm font-semibold">
+              {selectedDate} 학습 단어 ({selectedDateWords.length}개)
+            </span>
+            <button
+              onClick={() => setSelectedDate(null)}
+              className="text-xs text-gray-500 hover:text-black"
+            >
+              닫기 ✕
+            </button>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {selectedDateWords.map(({ word, knew }, index) => (
+              <div
+                key={word.id}
+                className={`flex items-center justify-between px-4 py-2 ${
+                  index > 0 ? 'border-t border-gray-200' : ''
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold text-sm">{word.english}</span>
+                  <span className="text-gray-400 mx-2">—</span>
+                  <span className="text-gray-600 text-sm">{word.korean}</span>
+                </div>
+                <span
+                  className="text-xs font-mono ml-2"
+                  style={{ color: knew ? 'var(--accent-success)' : 'var(--accent-error)' }}
+                >
+                  {knew ? '○' : '✕'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 범례 */}
       <div className="border-t border-black px-4 py-2 flex justify-end gap-4 text-xs">
