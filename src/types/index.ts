@@ -4,7 +4,9 @@ export interface Word {
   english: string;
   korean: string;
   pronunciation?: string;
-  addedAt?: string;  // 추가된 날짜 (YYYY-MM-DD) - 커스텀 단어장용
+  addedAt?: string;       // 추가된 날짜 (YYYY-MM-DD) - 커스텀 단어장용
+  example?: string;       // 예문 (영어)
+  exampleKorean?: string; // 예문 번역 (한글)
 }
 
 // 단어장 타입

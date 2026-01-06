@@ -645,7 +645,19 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                       {currentWord.pronunciation}
                     </p>
                   )}
-                  <p className="text-gray-300 text-xs mt-4 uppercase tracking-wider">
+                  {currentWord.example && (
+                    <div className="mt-4 px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 max-w-md">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                        "{currentWord.example}"
+                      </p>
+                      {currentWord.exampleKorean && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          {currentWord.exampleKorean}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-gray-300 dark:text-gray-600 text-xs mt-4 uppercase tracking-wider">
                     Tap to flip back
                   </p>
                 </div>

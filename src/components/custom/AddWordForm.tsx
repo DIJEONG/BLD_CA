@@ -14,12 +14,16 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
   const [english, setEnglish] = useState('');
   const [korean, setKorean] = useState('');
   const [pronunciation, setPronunciation] = useState('');
+  const [example, setExample] = useState('');
+  const [exampleKorean, setExampleKorean] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isTranslatingExample, setIsTranslatingExample] = useState(false);
   const [translationError, setTranslationError] = useState<string | null>(null);
 
   const addWordToCustomSet = useStore((state) => state.addWordToCustomSet);
   const englishInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const exampleDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // 영어 입력 시 자동 번역 (debounce 500ms)
   useEffect(() => {
@@ -55,6 +59,36 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
     };
   }, [english]);
 
+  // 예문 입력 시 자동 번역 (debounce 500ms)
+  useEffect(() => {
+    if (exampleDebounceRef.current) {
+      clearTimeout(exampleDebounceRef.current);
+    }
+
+    if (!example.trim()) {
+      setExampleKorean('');
+      return;
+    }
+
+    exampleDebounceRef.current = setTimeout(async () => {
+      setIsTranslatingExample(true);
+
+      const result = await translateToKorean(example.trim());
+
+      setIsTranslatingExample(false);
+
+      if (result.success && result.translation) {
+        setExampleKorean(result.translation);
+      }
+    }, 500);
+
+    return () => {
+      if (exampleDebounceRef.current) {
+        clearTimeout(exampleDebounceRef.current);
+      }
+    };
+  }, [example]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -64,12 +98,16 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
       english: english.trim(),
       korean: korean.trim(),
       pronunciation: pronunciation.trim() || undefined,
+      example: example.trim() || undefined,
+      exampleKorean: exampleKorean.trim() || undefined,
     });
 
     // 폼 초기화
     setEnglish('');
     setKorean('');
     setPronunciation('');
+    setExample('');
+    setExampleKorean('');
     setTranslationError(null);
 
     // 포커스 유지 (연속 입력 지원)
@@ -128,6 +166,27 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
             onChange={(e) => setPronunciation(e.target.value)}
             className="text-base border-2 border-black font-mono"
           />
+        </div>
+
+        {/* 예문 */}
+        <div>
+          <label className="data-label block mb-1">
+            Example (optional) {isTranslatingExample && <span className="font-mono">(translating...)</span>}
+          </label>
+          <Input
+            placeholder="She has a comprehensive vocabulary."
+            value={example}
+            onChange={(e) => setExample(e.target.value)}
+            className="text-base border-2 border-black"
+          />
+          {example && (
+            <Input
+              placeholder="예문 번역 (자동)"
+              value={exampleKorean}
+              onChange={(e) => setExampleKorean(e.target.value)}
+              className="text-base border-2 border-black border-t-0 text-sm"
+            />
+          )}
         </div>
 
         {/* 추가 버튼 */}
