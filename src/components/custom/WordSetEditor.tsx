@@ -219,8 +219,8 @@ export default function WordSetEditor({
     }
   };
 
-  // 번역 편집 화면으로 이동 (URL 탭)
-  const handleGoToTranslationEdit = (source: 'url' | 'pdf' | 'ocr') => {
+  // 번역 편집 화면으로 이동 및 자동 번역 시작
+  const handleGoToTranslationEdit = async (source: 'url' | 'pdf' | 'ocr') => {
     let words: string[] = [];
 
     if (source === 'url') {
@@ -233,15 +233,41 @@ export default function WordSetEditor({
 
     if (words.length === 0) return;
 
-    // 번역 편집용 데이터 초기화 (빈 번역으로 시작)
+    // 번역 편집용 데이터 초기화
     const wordsData: WordWithTranslation[] = words.map(english => ({
       english,
       korean: '',
+      isTranslating: true, // 번역 중 상태로 시작
     }));
 
     setWordsWithTranslation(wordsData);
     setTranslationSource(source);
     setShowTranslationEdit(true);
+    setIsAutoTranslating(true);
+
+    // 자동 번역 실행
+    const translatedWords = [...wordsData];
+    for (let i = 0; i < translatedWords.length; i++) {
+      try {
+        const result = await translateToKorean(translatedWords[i].english);
+        translatedWords[i] = {
+          ...translatedWords[i],
+          korean: result.success && result.translation ? result.translation : '(번역 필요)',
+          isTranslating: false,
+        };
+        // 실시간 업데이트
+        setWordsWithTranslation([...translatedWords]);
+      } catch {
+        translatedWords[i] = {
+          ...translatedWords[i],
+          korean: '(번역 필요)',
+          isTranslating: false,
+        };
+        setWordsWithTranslation([...translatedWords]);
+      }
+    }
+
+    setIsAutoTranslating(false);
   };
 
   // 개별 단어 번역 수정
@@ -283,30 +309,28 @@ export default function WordSetEditor({
     }
   };
 
-  // 전체 자동 번역
+  // 전체 재번역 (모든 단어 다시 번역)
   const handleAutoTranslateAll = async () => {
     setIsAutoTranslating(true);
 
-    const updated = [...wordsWithTranslation];
+    const updated = wordsWithTranslation.map(w => ({ ...w, isTranslating: true }));
+    setWordsWithTranslation(updated);
 
     for (let i = 0; i < updated.length; i++) {
-      // 이미 번역이 있으면 건너뛰기
-      if (updated[i].korean.trim()) continue;
-
       try {
         const result = await translateToKorean(updated[i].english);
         updated[i] = {
           ...updated[i],
           korean: result.success && result.translation ? result.translation : '(번역 필요)',
+          isTranslating: false,
         };
-        // 실시간 업데이트
         setWordsWithTranslation([...updated]);
       } catch {
-        updated[i] = { ...updated[i], korean: '(번역 필요)' };
+        updated[i] = { ...updated[i], korean: '(번역 필요)', isTranslating: false };
+        setWordsWithTranslation([...updated]);
       }
     }
 
-    setWordsWithTranslation(updated);
     setIsAutoTranslating(false);
   };
 
@@ -1120,48 +1144,73 @@ export default function WordSetEditor({
                 <div className="border-b border-foreground px-4 py-3 bg-secondary flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Languages size={18} />
-                    <span className="font-semibold text-sm">번역 입력</span>
+                    <span className="font-semibold text-sm">번역 확인</span>
                     <span className="text-xs text-muted-foreground font-mono">
                       ({wordsWithTranslation.length}개)
                     </span>
+                    {(() => {
+                      const needsCount = wordsWithTranslation.filter(w =>
+                        !w.isTranslating && (!w.korean.trim() || w.korean === '(번역 필요)' || w.korean === '(번역 실패)')
+                      ).length;
+                      return needsCount > 0 ? (
+                        <span className="text-xs text-amber-500 font-mono">
+                          · {needsCount}개 확인 필요
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                   <button
                     className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
                     onClick={handleAutoTranslateAll}
                     disabled={isAutoTranslating}
                   >
-                    {isAutoTranslating ? '번역 중...' : '전체 자동번역'}
+                    {isAutoTranslating ? '번역 중...' : '전체 재번역'}
                   </button>
                 </div>
 
                 <div className="max-h-[300px] overflow-y-auto">
-                  {wordsWithTranslation.map((word, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center gap-2 px-4 py-2 ${
-                        index > 0 ? 'border-t border-foreground' : ''
-                      }`}
-                    >
-                      <span className="font-medium text-sm min-w-[100px] sm:min-w-[120px]">
-                        {word.english}
-                      </span>
-                      <Input
-                        placeholder="번역 입력..."
-                        value={word.korean}
-                        onChange={(e) => handleTranslationChange(index, e.target.value)}
-                        className="flex-1 text-sm border border-foreground h-8"
-                        disabled={word.isTranslating}
-                      />
-                      <button
-                        className="tag text-[10px] px-2 py-1 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50"
-                        onClick={() => handleAutoTranslateSingle(index)}
-                        disabled={word.isTranslating}
-                        title="자동 번역"
+                  {wordsWithTranslation.map((word, index) => {
+                    const needsAttention = !word.korean.trim() ||
+                      word.korean === '(번역 필요)' ||
+                      word.korean === '(번역 실패)';
+
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-2 px-4 py-2 ${
+                          index > 0 ? 'border-t border-foreground' : ''
+                        } ${needsAttention && !word.isTranslating ? 'bg-amber-50 dark:bg-amber-950/30' : ''}`}
                       >
-                        {word.isTranslating ? '...' : '번역'}
-                      </button>
-                    </div>
-                  ))}
+                        {needsAttention && !word.isTranslating && (
+                          <span className="text-amber-500 text-sm">!</span>
+                        )}
+                        <span className={`font-medium text-sm min-w-[100px] sm:min-w-[120px] ${
+                          needsAttention && !word.isTranslating ? 'text-amber-600 dark:text-amber-400' : ''
+                        }`}>
+                          {word.english}
+                        </span>
+                        <Input
+                          placeholder="번역 입력..."
+                          value={word.korean}
+                          onChange={(e) => handleTranslationChange(index, e.target.value)}
+                          className={`flex-1 text-sm h-8 ${
+                            needsAttention && !word.isTranslating
+                              ? 'border-amber-400 dark:border-amber-600 border-2'
+                              : 'border border-foreground'
+                          }`}
+                          disabled={word.isTranslating}
+                        />
+                        <button
+                          className="tag text-[10px] px-2 py-1 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50"
+                          onClick={() => handleAutoTranslateSingle(index)}
+                          disabled={word.isTranslating}
+                          title="자동 번역"
+                        >
+                          {word.isTranslating ? '...' : '재번역'}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="border-t border-foreground p-4 flex gap-2">
