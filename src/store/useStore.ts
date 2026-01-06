@@ -10,6 +10,8 @@ import {
   DailyStats,
   LeitnerBox,
   LEITNER_INTERVALS,
+  LEITNER_INTERVALS_UNSURE,
+  Confidence,
   CustomWordSet,
   Word,
 } from '@/types';
@@ -20,13 +22,18 @@ interface StoreActions {
   updateProfile: (updates: Partial<UserProfile>) => void;
 
   // 학습 진도 (Leitner System)
-  updateWordProgress: (wordId: string, knew: boolean) => void;
+  updateWordProgress: (wordId: string, knew: boolean, confidence?: Confidence) => void;
   getWordProgress: (wordId: string) => WordProgress | undefined;
   initWordProgress: (wordId: string) => WordProgress;
 
   // 복습 단어 조회
   getWordsForReview: () => WordProgress[];
   getReviewCount: () => number;
+
+  // 오답 단어 조회
+  getWrongWords: () => WordProgress[];
+  getWrongWordsCount: () => number;
+  clearWrongCount: (wordId: string) => void;
 
   // 세션
   addSession: (session: LearningSession) => void;
@@ -76,10 +83,11 @@ function getDaysDiff(date1: string, date2: string): number {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
-// 다음 복습일 계산 (Leitner)
-function getNextReviewDate(box: LeitnerBox): string {
+// 다음 복습일 계산 (Leitner) - 확신도에 따라 간격 조절
+function getNextReviewDate(box: LeitnerBox, confidence: Confidence = 'sure'): string {
   const today = new Date();
-  const daysToAdd = LEITNER_INTERVALS[box];
+  const intervals = confidence === 'unsure' ? LEITNER_INTERVALS_UNSURE : LEITNER_INTERVALS;
+  const daysToAdd = intervals[box];
   today.setDate(today.getDate() + daysToAdd);
   return today.toISOString().split('T')[0];
 }
@@ -110,13 +118,13 @@ export const useStore = create<AppState & StoreActions>()(
           lastStudiedAt: '',
           attemptCount: 0,
           correctCount: 0,
+          wrongCount: 0,
         };
         return newProgress;
       },
 
       // Leitner 시스템으로 단어 진도 업데이트
-      updateWordProgress: (wordId, knew) => {
-        const today = getTodayString();
+      updateWordProgress: (wordId, knew, confidence = 'sure') => {
         const current = get().wordProgress[wordId] || get().initWordProgress(wordId);
 
         let newBox: LeitnerBox;
@@ -131,10 +139,12 @@ export const useStore = create<AppState & StoreActions>()(
         const updated: WordProgress = {
           wordId,
           box: newBox,
-          nextReviewDate: getNextReviewDate(newBox),
+          nextReviewDate: getNextReviewDate(newBox, knew ? confidence : 'sure'),
           lastStudiedAt: new Date().toISOString(),
           attemptCount: current.attemptCount + 1,
           correctCount: current.correctCount + (knew ? 1 : 0),
+          confidence: knew ? confidence : undefined,
+          wrongCount: (current.wrongCount || 0) + (knew ? 0 : 1),
         };
 
         set((state) => ({
@@ -162,6 +172,32 @@ export const useStore = create<AppState & StoreActions>()(
       // 복습 필요한 단어 개수
       getReviewCount: () => {
         return get().getWordsForReview().length;
+      },
+
+      // 오답 단어 목록 (wrongCount > 0, 많이 틀린 순)
+      getWrongWords: () => {
+        const allProgress = Object.values(get().wordProgress);
+        return allProgress
+          .filter((p) => (p.wrongCount || 0) > 0)
+          .sort((a, b) => (b.wrongCount || 0) - (a.wrongCount || 0));
+      },
+
+      // 오답 단어 개수
+      getWrongWordsCount: () => {
+        return get().getWrongWords().length;
+      },
+
+      // 오답 카운트 초기화 (복습 완료 시)
+      clearWrongCount: (wordId) => {
+        const current = get().wordProgress[wordId];
+        if (current) {
+          set((state) => ({
+            wordProgress: {
+              ...state.wordProgress,
+              [wordId]: { ...current, wrongCount: 0 },
+            },
+          }));
+        }
       },
 
       addSession: (session) => {

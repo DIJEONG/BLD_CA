@@ -1,13 +1,14 @@
 'use client';
 
 import { create } from 'zustand';
-import { Word, SessionAnswer, LearningSession } from '@/types';
+import { Word, SessionAnswer, LearningSession, Confidence } from '@/types';
 import { useStore } from './useStore';
 
 // 플래시카드 답변 (1단계)
 interface FlashcardAnswer {
   wordId: string;
   knew: boolean;
+  confidence?: Confidence;
   timeSpentMs: number;
 }
 
@@ -41,7 +42,7 @@ interface LearningState {
 
   // 액션 - 1단계 플래시카드
   revealAnswer: () => void;
-  markFlashcard: (knew: boolean) => void;
+  markFlashcard: (knew: boolean, confidence?: Confidence) => void;
   isFlashcardComplete: () => boolean;
   getFlashcardProgress: () => { current: number; total: number; knew: number; didntKnow: number };
 
@@ -144,14 +145,18 @@ export const useLearningStore = create<LearningState>((set, get) => ({
     set({ isRevealed: true });
   },
 
-  markFlashcard: (knew) => {
+  markFlashcard: (knew, confidence = 'sure') => {
     const { words, currentIndex, wordStartTime, flashcardAnswers } = get();
     const currentWord = words[currentIndex];
     if (!currentWord) return;
 
+    // Leitner 진도 업데이트 (확신도 반영)
+    useStore.getState().updateWordProgress(currentWord.id, knew, confidence);
+
     const answer: FlashcardAnswer = {
       wordId: currentWord.id,
       knew,
+      confidence: knew ? confidence : undefined,
       timeSpentMs: Date.now() - (wordStartTime || Date.now()),
     };
 

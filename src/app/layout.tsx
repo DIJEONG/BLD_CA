@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Noto_Serif_KR, JetBrains_Mono } from "next/font/google";
+import { Gowun_Batang, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const notoSerifKR = Noto_Serif_KR({
+const gowunBatang = Gowun_Batang({
   variable: "--font-serif",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "900"],
+  weight: ["400", "700"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${notoSerifKR.variable} ${jetbrainsMono.variable} antialiased min-h-screen bg-background`}
+        className={`${gowunBatang.variable} ${jetbrainsMono.variable} antialiased min-h-screen bg-background`}
       >
         {children}
       </body>

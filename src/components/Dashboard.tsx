@@ -12,6 +12,7 @@ import WordSetEditor from './custom/WordSetEditor';
 export default function Dashboard() {
   const [isLearning, setIsLearning] = useState(false);
   const [selectedWordSetId, setSelectedWordSetId] = useState<string | null>(null);
+  const [isWrongWordsMode, setIsWrongWordsMode] = useState(false);
   const [editingWordSetId, setEditingWordSetId] = useState<string | null>(null);
   const [isCreatingWordSet, setIsCreatingWordSet] = useState(false);
   const [newWordSetName, setNewWordSetName] = useState('');
@@ -23,8 +24,10 @@ export default function Dashboard() {
   const resetAll = useStore((state) => state.resetAll);
   const getCustomWordSets = useStore((state) => state.getCustomWordSets);
   const addCustomWordSet = useStore((state) => state.addCustomWordSet);
+  const getWrongWordsCount = useStore((state) => state.getWrongWordsCount);
 
   const customWordSets = getCustomWordSets();
+  const wrongWordsCount = getWrongWordsCount();
 
   const todayStats = getTodayStats();
   const weeklyStats = getWeeklyStats();
@@ -41,6 +44,13 @@ export default function Dashboard() {
   const handleFinishLearning = () => {
     setIsLearning(false);
     setSelectedWordSetId(null);
+    setIsWrongWordsMode(false);
+  };
+
+  const handleStartWrongWordsReview = () => {
+    setIsWrongWordsMode(true);
+    setSelectedWordSetId('wrong-words');
+    setIsLearning(true);
   };
 
   const handleCreateWordSet = () => {
@@ -61,7 +71,13 @@ export default function Dashboard() {
 
   // 학습 화면
   if (isLearning && selectedWordSetId) {
-    return <LearningPage wordSetId={selectedWordSetId} onFinish={handleFinishLearning} />;
+    return (
+      <LearningPage
+        wordSetId={selectedWordSetId}
+        onFinish={handleFinishLearning}
+        wrongWordsMode={isWrongWordsMode}
+      />
+    );
   }
 
   // 단어장 편집 화면
@@ -168,6 +184,33 @@ export default function Dashboard() {
             />
           </div>
         </div>
+
+        {/* 오답 복습 섹션 */}
+        {wrongWordsCount > 0 && (
+          <div className="border-2 border-black mb-8">
+            <div className="border-b border-black px-4 py-2">
+              <span className="text-sm uppercase tracking-wider">틀린 단어 복습</span>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-serif text-xl font-bold mb-1">
+                    {wrongWordsCount}개 단어
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    틀린 단어를 집중적으로 복습해보세요
+                  </p>
+                </div>
+                <button
+                  className="tag-filled hover:bg-white hover:text-black transition-colors"
+                  onClick={handleStartWrongWordsReview}
+                >
+                  오답 복습 →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 주간 통계 */}
         <div className="border-2 border-black mb-8">

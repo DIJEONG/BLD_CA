@@ -26,6 +26,9 @@ export interface UserProfile {
 // Leitner Box 타입 (1~5 단계)
 export type LeitnerBox = 1 | 2 | 3 | 4 | 5;
 
+// 확신도 타입
+export type Confidence = 'sure' | 'unsure';
+
 // 단어별 학습 진도 (Leitner System)
 export interface WordProgress {
   wordId: string;
@@ -34,15 +37,26 @@ export interface WordProgress {
   lastStudiedAt: string;        // 마지막 학습일
   attemptCount: number;         // 총 시도 횟수
   correctCount: number;         // 정답 횟수
+  confidence?: Confidence;      // 마지막 확신도
+  wrongCount: number;           // 누적 오답 횟수
 }
 
-// Leitner 복습 간격 (일 단위)
+// Leitner 복습 간격 (일 단위) - 확실히 아는 단어
 export const LEITNER_INTERVALS: Record<LeitnerBox, number> = {
   1: 1,   // 매일
   2: 2,   // 2일
   3: 4,   // 4일
   4: 7,   // 7일
   5: 14,  // 14일
+};
+
+// Leitner 복습 간격 (일 단위) - 애매하게 아는 단어 (더 짧은 간격)
+export const LEITNER_INTERVALS_UNSURE: Record<LeitnerBox, number> = {
+  1: 1,   // 매일
+  2: 1,   // 1일 (원래 2일)
+  3: 2,   // 2일 (원래 4일)
+  4: 4,   // 4일 (원래 7일)
+  5: 7,   // 7일 (원래 14일)
 };
 
 // 학습 세션

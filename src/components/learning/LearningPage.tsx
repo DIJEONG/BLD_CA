@@ -4,18 +4,20 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLearningStore } from '@/store/useLearningStore';
 import { useStore } from '@/store/useStore';
 import { getWordSetById, getWordsByIds } from '@/data/words';
-import { Word, WordSet } from '@/types';
+import { Word, WordSet, Confidence } from '@/types';
 import { Input } from '@/components/ui/input';
 import LearningResult from './LearningResult';
+import { speak, isTTSSupported } from '@/lib/tts';
 
 interface LearningPageProps {
   wordSetId: string;
   onFinish: () => void;
+  wrongWordsMode?: boolean;
 }
 
 type LearningPhase = 'preview' | 'flashcard' | 'typing' | 'result';
 
-export default function LearningPage({ wordSetId, onFinish }: LearningPageProps) {
+export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = false }: LearningPageProps) {
   const [phase, setPhase] = useState<LearningPhase>('preview');
   const [elapsedTime, setElapsedTime] = useState(0);
   const [initialized, setInitialized] = useState(false);
@@ -26,6 +28,8 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
   const profile = useStore((state) => state.profile);
   const getWordsForReview = useStore((state) => state.getWordsForReview);
   const getCustomWordSets = useStore((state) => state.getCustomWordSets);
+  const getWrongWords = useStore((state) => state.getWrongWords);
+  const clearWrongCount = useStore((state) => state.clearWrongCount);
 
   const wordSet = useMemo(() => {
     const builtInSet = getWordSetById(wordSetId);
@@ -77,23 +81,38 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
   const dailyGoal = profile?.dailyWordCount || 20;
 
   useEffect(() => {
-    if (wordSet && !initialized) {
-      const reviewProgress = getWordsForReview();
-      const reviewWordIdsArray = reviewProgress.map(p => p.wordId);
-      const reviewWords = getWordsByIds(reviewWordIdsArray);
+    if (!initialized) {
+      // 오답 복습 모드
+      if (wrongWordsMode) {
+        const wrongProgress = getWrongWords();
+        const wrongWordIdsArray = wrongProgress.map(p => p.wordId);
+        const wrongWordObjects = getWordsByIds(wrongWordIdsArray);
 
-      const remainingCount = Math.max(0, dailyGoal - reviewWords.length);
-      const newWords = wordSet.words
-        .filter(w => !reviewWordIdsArray.includes(w.id))
-        .slice(0, remainingCount);
+        setReviewWordIds(new Set(wrongWordIdsArray));
+        setPreviewWords(wrongWordObjects);
+        setInitialized(true);
+        return;
+      }
 
-      const wordsToStudy = [...reviewWords, ...newWords];
+      // 일반 모드
+      if (wordSet) {
+        const reviewProgress = getWordsForReview();
+        const reviewWordIdsArray = reviewProgress.map(p => p.wordId);
+        const reviewWords = getWordsByIds(reviewWordIdsArray);
 
-      setReviewWordIds(new Set(reviewWordIdsArray));
-      setPreviewWords(wordsToStudy);
-      setInitialized(true);
+        const remainingCount = Math.max(0, dailyGoal - reviewWords.length);
+        const newWords = wordSet.words
+          .filter(w => !reviewWordIdsArray.includes(w.id))
+          .slice(0, remainingCount);
+
+        const wordsToStudy = [...reviewWords, ...newWords];
+
+        setReviewWordIds(new Set(reviewWordIdsArray));
+        setPreviewWords(wordsToStudy);
+        setInitialized(true);
+      }
     }
-  }, [wordSet, initialized, dailyGoal, getWordsForReview]);
+  }, [wordSet, initialized, dailyGoal, getWordsForReview, wrongWordsMode, getWrongWords]);
 
   useEffect(() => {
     if (isActive && (phase === 'flashcard' || phase === 'typing')) {
@@ -109,6 +128,13 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
       inputRef.current.focus();
     }
   }, [phase, isTypingRevealed, currentIndex]);
+
+  // TTS: 플래시카드 정답 공개 시 자동 발음
+  useEffect(() => {
+    if (phase === 'flashcard' && isRevealed && currentWord) {
+      speak(currentWord.english);
+    }
+  }, [phase, isRevealed, currentWord]);
 
   const handleStartLearning = () => {
     resetSession();
@@ -127,8 +153,8 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
     }
   }, [isRevealed, revealAnswer]);
 
-  const handleMarkFlashcard = useCallback((knew: boolean) => {
-    markFlashcard(knew);
+  const handleMarkFlashcard = useCallback((knew: boolean, confidence: Confidence = 'sure') => {
+    markFlashcard(knew, confidence);
   }, [markFlashcard]);
 
   const handleSubmitTyping = useCallback((e?: React.FormEvent) => {
@@ -141,11 +167,15 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
   const handleNextTyping = useCallback(() => {
     if (currentIndex >= words.length - 1) {
       completeSession();
+      // 오답 복습 모드에서 세션 완료 시 wrongCount 초기화
+      if (wrongWordsMode) {
+        words.forEach(word => clearWrongCount(word.id));
+      }
       setPhase('result');
     } else {
       nextTypingWord();
     }
-  }, [currentIndex, words.length, completeSession, nextTypingWord]);
+  }, [currentIndex, words.length, completeSession, nextTypingWord, wrongWordsMode, words, clearWrongCount]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (phase === 'flashcard') {
@@ -155,14 +185,23 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
           handleReveal();
         }
       } else if (isRevealed) {
-        if (e.key === 'ArrowRight' || e.key === 'o' || e.key === 'O') {
-          handleMarkFlashcard(true);
-        } else if (e.key === 'ArrowLeft' || e.key === 'x' || e.key === 'X') {
+        // 1: 확실히 알았다, 2: 애매하게 알았다, 3: 몰랐다
+        if (e.key === '1' || e.key === 'ArrowRight') {
+          handleMarkFlashcard(true, 'sure');
+        } else if (e.key === '2' || e.key === 'ArrowUp') {
+          handleMarkFlashcard(true, 'unsure');
+        } else if (e.key === '3' || e.key === 'ArrowLeft' || e.key === 'x' || e.key === 'X') {
           handleMarkFlashcard(false);
         }
       }
+    } else if (phase === 'typing') {
+      // 타이핑 단계: 정답 공개 후 Enter로 다음 단어
+      if (e.key === 'Enter' && isTypingRevealed) {
+        e.preventDefault();
+        handleNextTyping();
+      }
     }
-  }, [phase, isRevealed, handleReveal, handleMarkFlashcard]);
+  }, [phase, isRevealed, handleReveal, handleMarkFlashcard, isTypingRevealed, handleNextTyping]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -210,7 +249,7 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
             >
               ← EXIT
             </button>
-            <span className="font-mono text-sm">{wordSet?.name}</span>
+            <span className="font-mono text-sm">{wrongWordsMode ? '오답 복습' : wordSet?.name}</span>
             <div className="w-16" />
           </div>
         </header>
@@ -218,12 +257,16 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
         <main className="max-w-2xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
             <p className="text-sm uppercase tracking-wider text-gray-500 mb-2">
-              Today's Session
+              {wrongWordsMode ? 'Wrong Words Review' : "Today's Session"}
             </p>
             <h1 className="text-4xl font-serif font-bold mb-2">
               {previewWords.length} WORDS
             </h1>
-            {reviewWordIds.size > 0 && (
+            {wrongWordsMode ? (
+              <span className="tag-filled">
+                틀린 단어 집중 학습
+              </span>
+            ) : reviewWordIds.size > 0 && (
               <span className="tag-filled">
                 REVIEW {reviewWordIds.size}
               </span>
@@ -266,7 +309,7 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
                       <span className="text-gray-600">{word.korean}</span>
                     </div>
                     {isReview && (
-                      <span className="tag text-xs">REVIEW</span>
+                      <span className="tag text-xs">{wrongWordsMode ? 'WRONG' : 'REVIEW'}</span>
                     )}
                   </div>
                 );
@@ -409,9 +452,23 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
                 </>
               ) : (
                 <>
-                  <p className="text-4xl font-serif font-bold mb-2">
-                    {currentWord.english}
-                  </p>
+                  <div className="flex items-center justify-center gap-3 mb-2">
+                    <p className="text-4xl font-serif font-bold">
+                      {currentWord.english}
+                    </p>
+                    {isTTSSupported() && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          speak(currentWord.english);
+                        }}
+                        className="p-2 border border-black hover:bg-black hover:text-white transition-colors"
+                        title="발음 듣기"
+                      >
+                        🔊
+                      </button>
+                    )}
+                  </div>
                   {currentWord.pronunciation && (
                     <p className="text-gray-500 font-mono">
                       {currentWord.pronunciation}
@@ -422,18 +479,24 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
             </div>
 
             {isRevealed && (
-              <div className="grid grid-cols-2 border-t-2 border-black">
+              <div className="grid grid-cols-3 border-t-2 border-black">
                 <button
-                  className="py-6 border-r border-black hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold"
+                  className="py-6 border-r border-black hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold text-sm"
                   onClick={() => handleMarkFlashcard(false)}
                 >
                   ✕ 몰랐다
                 </button>
                 <button
-                  className="py-6 hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold"
-                  onClick={() => handleMarkFlashcard(true)}
+                  className="py-6 border-r border-black hover:bg-gray-100 transition-colors uppercase tracking-wider font-semibold text-sm"
+                  onClick={() => handleMarkFlashcard(true, 'unsure')}
                 >
-                  ○ 알았다
+                  △ 애매함
+                </button>
+                <button
+                  className="py-6 hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold text-sm"
+                  onClick={() => handleMarkFlashcard(true, 'sure')}
+                >
+                  ○ 확실함
                 </button>
               </div>
             )}
@@ -442,7 +505,7 @@ export default function LearningPage({ wordSetId, onFinish }: LearningPageProps)
           <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider">
             {!isRevealed
               ? 'SPACE / ENTER: Reveal'
-              : '← / X: Wrong  |  → / O: Correct'
+              : '1/→: 확실함  |  2/↑: 애매함  |  3/←: 몰랐다'
             }
           </p>
         </main>
