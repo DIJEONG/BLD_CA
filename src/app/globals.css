@@ -50,7 +50,7 @@
   /* 흑백 미니멀 테마 - 둥근 모서리 제거 */
   --radius: 0px;
 
-  /* 색상 - 순수 흑백 */
+  /* 색상 - 순수 흑백 + 자연 톤 포인트 */
   --background: #ffffff;
   --foreground: #000000;
   --card: #ffffff;
@@ -69,6 +69,17 @@
   --border: #000000;
   --input: #e5e5e5;
   --ring: #000000;
+
+  /* Natural tone accent colors */
+  --accent-teal: #0d9488;
+  --accent-teal-light: #ccfbf1;
+  --accent-teal-dark: #0f766e;
+  --accent-success: #16a34a;
+  --accent-success-light: #dcfce7;
+  --accent-error: #dc2626;
+  --accent-error-light: #fef2f2;
+  --accent-amber: #d97706;
+  --accent-amber-light: #fef3c7;
 
   /* Chart colors - 그레이스케일 */
   --chart-1: #000000;
@@ -180,6 +191,38 @@
     @apply text-xs font-medium uppercase tracking-wider;
   }
 
+  .tag-teal {
+    @apply inline-block px-2 py-0.5;
+    @apply text-xs font-medium uppercase tracking-wider;
+    background-color: var(--accent-teal);
+    color: white;
+    border: 1px solid var(--accent-teal-dark);
+  }
+
+  .tag-amber {
+    @apply inline-block px-2 py-0.5;
+    @apply text-xs font-medium uppercase tracking-wider;
+    background-color: var(--accent-amber);
+    color: white;
+    border: 1px solid var(--accent-amber);
+  }
+
+  .tag-success {
+    @apply inline-block px-2 py-0.5;
+    @apply text-xs font-medium uppercase tracking-wider;
+    background-color: var(--accent-success);
+    color: white;
+    border: 1px solid var(--accent-success);
+  }
+
+  .tag-error {
+    @apply inline-block px-2 py-0.5;
+    @apply text-xs font-medium uppercase tracking-wider;
+    background-color: var(--accent-error);
+    color: white;
+    border: 1px solid var(--accent-error);
+  }
+
   /* 카드 스타일 */
   .card-editorial {
     @apply border-2 border-black bg-white;
@@ -242,6 +285,11 @@
   }
 
   .progress-editorial-bar {
+    @apply h-full transition-all duration-300;
+    background-color: var(--accent-teal);
+  }
+
+  .progress-editorial-bar-black {
     @apply h-full bg-black transition-all duration-300;
   }
 }

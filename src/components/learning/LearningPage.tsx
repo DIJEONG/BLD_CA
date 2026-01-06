@@ -280,11 +280,11 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
               {previewWords.length} WORDS
             </h1>
             {wrongWordsMode ? (
-              <span className="tag-filled">
+              <span className="tag-error">
                 틀린 단어 집중 학습
               </span>
             ) : reviewWordIds.size > 0 && (
-              <span className="tag-filled">
+              <span className="tag-teal">
                 REVIEW {reviewWordIds.size}
               </span>
             )}
@@ -334,7 +334,9 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                       <span className="text-gray-600 text-sm sm:text-base">{word.korean}</span>
                     </div>
                     {isReview && (
-                      <span className="tag text-[10px] sm:text-xs shrink-0">{wrongWordsMode ? 'WRONG' : 'REVIEW'}</span>
+                      <span className={`${wrongWordsMode ? 'tag-error' : 'tag-teal'} text-[10px] sm:text-xs shrink-0`}>
+                        {wrongWordsMode ? 'WRONG' : 'REVIEW'}
+                      </span>
                     )}
                   </div>
                 );
@@ -435,7 +437,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                 ← EXIT
               </button>
               <div className="flex items-center gap-4">
-                <span className="tag">PHASE 1</span>
+                <span className="tag-teal">PHASE 1</span>
                 <span className="font-mono text-sm">{formatTime(elapsedTime)}</span>
               </div>
             </div>
@@ -506,19 +508,28 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             {isRevealed && (
               <div className="grid grid-cols-3 border-t-2 border-black">
                 <button
-                  className="py-4 sm:py-6 border-r border-black hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
+                  className="py-4 sm:py-6 border-r border-black transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm hover:text-white"
+                  style={{ backgroundColor: 'var(--accent-error-light)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error-light)'}
                   onClick={() => handleMarkFlashcard(false)}
                 >
                   <span className="hidden sm:inline">✕ </span>몰랐다
                 </button>
                 <button
-                  className="py-4 sm:py-6 border-r border-black hover:bg-gray-100 transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
+                  className="py-4 sm:py-6 border-r border-black transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
+                  style={{ backgroundColor: 'var(--accent-amber-light)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef3c7'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-amber-light)'}
                   onClick={() => handleMarkFlashcard(true, 'unsure')}
                 >
                   <span className="hidden sm:inline">△ </span>애매함
                 </button>
                 <button
-                  className="py-4 sm:py-6 hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
+                  className="py-4 sm:py-6 transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm hover:text-white"
+                  style={{ backgroundColor: 'var(--accent-success-light)' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-success)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-success-light)'}
                   onClick={() => handleMarkFlashcard(true, 'sure')}
                 >
                   <span className="hidden sm:inline">○ </span>확실함
@@ -565,7 +576,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                 ← EXIT
               </button>
               <div className="flex items-center gap-4">
-                <span className="tag-filled">PHASE 2</span>
+                <span className="tag-amber">PHASE 2</span>
                 <span className="font-mono text-sm">{formatTime(elapsedTime)}</span>
               </div>
             </div>
@@ -596,12 +607,14 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
             {/* 최종 정답/오답 공개 */}
             {isTypingRevealed && (
-              <div className={`border-t-2 border-black p-4 sm:p-6 text-center ${
-                isCorrect ? 'bg-green-50' : 'bg-red-50'
-              }`}>
-                <p className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 ${
-                  isCorrect ? 'text-green-600' : 'text-red-600'
-                }`}>
+              <div
+                className="border-t-2 border-black p-4 sm:p-6 text-center"
+                style={{ backgroundColor: isCorrect ? 'var(--accent-success-light)' : 'var(--accent-error-light)' }}
+              >
+                <p
+                  className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3"
+                  style={{ color: isCorrect ? 'var(--accent-success)' : 'var(--accent-error)' }}
+                >
                   {isCorrect ? '정답!' : '오답'}
                 </p>
                 <p className="text-2xl sm:text-3xl font-serif font-bold">{currentWord.english}</p>

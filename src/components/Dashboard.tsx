@@ -167,7 +167,7 @@ export default function Dashboard() {
             {profile?.nickname}님, 오늘도 학습해볼까요?
           </h2>
           {currentStreak > 0 && (
-            <span className="tag-filled">
+            <span className="tag-teal">
               {currentStreak}일 연속 학습 중
             </span>
           )}
@@ -219,14 +219,14 @@ export default function Dashboard() {
 
         {/* 오답 복습 섹션 */}
         {wrongWordsCount > 0 && (
-          <div className="border-2 border-black mb-8">
-            <div className="border-b border-black px-4 py-2">
-              <span className="text-sm uppercase tracking-wider">틀린 단어 복습</span>
+          <div className="border-2 mb-8" style={{ borderColor: 'var(--accent-error)' }}>
+            <div className="px-4 py-2" style={{ borderBottom: '1px solid var(--accent-error)', backgroundColor: 'var(--accent-error-light)' }}>
+              <span className="text-sm uppercase tracking-wider" style={{ color: 'var(--accent-error)' }}>틀린 단어 복습</span>
             </div>
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-serif text-xl font-bold mb-1">
+                  <p className="font-serif text-xl font-bold mb-1" style={{ color: 'var(--accent-error)' }}>
                     {wrongWordsCount}개 단어
                   </p>
                   <p className="text-sm text-gray-500">
@@ -234,7 +234,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <button
-                  className="tag-filled hover:bg-white hover:text-black transition-colors"
+                  className="tag-error hover:opacity-80 transition-opacity"
                   onClick={handleStartWrongWordsReview}
                 >
                   오답 복습 →
@@ -287,15 +287,27 @@ export default function Dashboard() {
                         {/* 학습 기록 있으면 막대, 없으면 점선 */}
                         {stat.wordsStudied > 0 ? (
                           <div
-                            className={`w-full ${isToday ? 'bg-black' : 'bg-gray-400'}`}
-                            style={{ height: `${Math.min(height, 100)}%` }}
+                            className="w-full"
+                            style={{
+                              height: `${Math.min(height, 100)}%`,
+                              backgroundColor: isToday ? 'var(--accent-teal)' : '#a3a3a3'
+                            }}
                           />
                         ) : (
                           <div className="flex-1 flex items-end justify-center pb-1">
-                            <div className={`w-1.5 h-1.5 ${isToday ? 'bg-black' : 'border border-gray-300'}`} />
+                            <div
+                              className="w-1.5 h-1.5"
+                              style={{
+                                backgroundColor: isToday ? 'var(--accent-teal)' : 'transparent',
+                                border: isToday ? 'none' : '1px solid #d4d4d4'
+                              }}
+                            />
                           </div>
                         )}
-                        <span className={`text-[10px] sm:text-xs mt-1 font-mono ${isToday ? 'font-bold' : 'text-gray-400'}`}>
+                        <span
+                          className={`text-[10px] sm:text-xs mt-1 font-mono ${isToday ? 'font-bold' : 'text-gray-400'}`}
+                          style={{ color: isToday ? 'var(--accent-teal)' : undefined }}
+                        >
                           {day}
                         </span>
                       </div>

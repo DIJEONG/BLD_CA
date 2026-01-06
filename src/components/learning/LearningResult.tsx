@@ -115,14 +115,14 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
                 }`}
               >
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                  <span className="text-green-600 font-mono text-xs sm:text-sm shrink-0">○</span>
+                  <span className="font-mono text-xs sm:text-sm shrink-0" style={{ color: 'var(--accent-success)' }}>○</span>
                   <div className="min-w-0 truncate">
                     <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
                     <span className="text-gray-400 mx-1 sm:mx-2">—</span>
                     <span className="text-gray-600 text-sm sm:text-base">{item.word?.korean}</span>
                   </div>
                 </div>
-                <span className="font-mono text-xs sm:text-sm text-gray-500 shrink-0 ml-2">
+                <span className="font-mono text-xs sm:text-sm shrink-0 ml-2" style={{ color: 'var(--accent-teal)' }}>
                   {formatInterval(item.interval)}
                 </span>
               </div>
@@ -135,19 +135,20 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
             {wrongAnswers.map((item, index) => (
               <div
                 key={`wrong-${index}`}
-                className={`flex justify-between items-center px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 ${
+                className={`flex justify-between items-center px-3 sm:px-4 py-2 sm:py-3 ${
                   index > 0 ? 'border-t border-gray-200' : ''
                 }`}
+                style={{ backgroundColor: 'var(--accent-error-light)' }}
               >
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                  <span className="text-red-500 font-mono text-xs sm:text-sm shrink-0">✕</span>
+                  <span className="font-mono text-xs sm:text-sm shrink-0" style={{ color: 'var(--accent-error)' }}>✕</span>
                   <div className="min-w-0 truncate">
                     <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
                     <span className="text-gray-400 mx-1 sm:mx-2">—</span>
                     <span className="text-gray-600 text-sm sm:text-base">{item.word?.korean}</span>
                   </div>
                 </div>
-                <span className="font-mono text-xs sm:text-sm text-red-500 shrink-0 ml-2">
+                <span className="font-mono text-xs sm:text-sm shrink-0 ml-2" style={{ color: 'var(--accent-error)' }}>
                   내일
                 </span>
               </div>
