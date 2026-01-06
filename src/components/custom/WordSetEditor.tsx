@@ -13,6 +13,7 @@ import {
   JSON_TEMPLATE_SIMPLE,
   JSON_TEMPLATE_FULL,
 } from '@/lib/jsonImport';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface WordSetEditorProps {
   wordSetId: string;
@@ -499,7 +500,7 @@ export default function WordSetEditor({
                 className="flex items-center gap-1 text-xs text-muted-foreground mt-3 hover:text-foreground transition-colors"
                 onClick={() => setShowJsonHelp(!showJsonHelp)}
               >
-                <span>{showJsonHelp ? '▼' : '▸'}</span>
+                {showJsonHelp ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 JSON 형식 보기
               </button>
             </div>

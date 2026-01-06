@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { allWordSets } from '@/data/words';
 import { Word } from '@/types';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 export default function LearningCalendar() {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
@@ -156,7 +157,7 @@ export default function LearningCalendar() {
           onClick={handlePrevMonth}
           className="tag hover:bg-foreground hover:text-background transition-colors"
         >
-          ←
+          <ChevronLeft size={16} />
         </button>
         <span className="font-serif font-bold text-lg">
           {year}년 {monthNames[month - 1]}
@@ -165,7 +166,7 @@ export default function LearningCalendar() {
           onClick={handleNextMonth}
           className="tag hover:bg-foreground hover:text-background transition-colors"
         >
-          →
+          <ChevronRight size={16} />
         </button>
       </div>
 
@@ -246,9 +247,9 @@ export default function LearningCalendar() {
             </span>
             <button
               onClick={() => setSelectedDate(null)}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
             >
-              닫기 ✕
+              닫기 <X size={12} />
             </button>
           </div>
           <div className="max-h-60 overflow-y-auto">

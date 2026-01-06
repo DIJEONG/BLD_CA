@@ -9,6 +9,7 @@ import { Word, WordSet, Confidence } from '@/types';
 import { Input } from '@/components/ui/input';
 import LearningResult from './LearningResult';
 import { speak, isTTSSupported } from '@/lib/tts';
+import { Volume2 } from 'lucide-react';
 
 interface LearningPageProps {
   wordSetId: string;
@@ -652,10 +653,10 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                           e.stopPropagation();
                           speak(currentWord.english);
                         }}
-                        className="p-1.5 sm:p-2 border border-foreground hover:bg-foreground hover:text-background transition-colors text-sm sm:text-base"
+                        className="p-1.5 sm:p-2 border border-foreground hover:bg-foreground hover:text-background transition-colors"
                         title="발음 듣기"
                       >
-                        🔊
+                        <Volume2 size={18} />
                       </button>
                     )}
                   </div>
