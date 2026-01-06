@@ -1,6 +1,7 @@
 'use client';
 
 import { useLearningStore } from '@/store/useLearningStore';
+import { useStore } from '@/store/useStore';
 
 interface LearningResultProps {
   onFinish: () => void;
@@ -8,6 +9,7 @@ interface LearningResultProps {
 
 export default function LearningResult({ onFinish }: LearningResultProps) {
   const { words, typingAnswers, getElapsedTime, resetSession, startSession } = useLearningStore();
+  const getWordProgress = useStore((state) => state.getWordProgress);
 
   const correctCount = typingAnswers.filter((a) => a.knew).length;
   const wrongCount = typingAnswers.filter((a) => !a.knew).length;
@@ -15,18 +17,30 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
   const accuracy = typingAnswers.length > 0 ? Math.round((correctCount / typingAnswers.length) * 100) : 0;
   const avgTimePerWord = typingAnswers.length > 0 ? Math.round(totalTime / typingAnswers.length) : 0;
 
-  // 틀린 단어 목록
-  const wrongAnswers = typingAnswers
-    .filter((a) => !a.knew)
-    .map((a) => {
-      const word = words.find((w) => w.id === a.wordId);
-      return { ...a, word };
-    });
+  // 모든 단어와 복습 간격
+  const allAnswersWithInterval = typingAnswers.map((a) => {
+    const word = words.find((w) => w.id === a.wordId);
+    const progress = getWordProgress(a.wordId);
+    return { ...a, word, interval: progress?.interval || 1 };
+  });
+
+  // 정답/오답 분리
+  const correctAnswers = allAnswersWithInterval.filter((a) => a.knew);
+  const wrongAnswers = allAnswersWithInterval.filter((a) => !a.knew);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // 복습 간격 포맷
+  const formatInterval = (days: number) => {
+    if (days === 1) return '내일';
+    if (days < 7) return `${days}일 후`;
+    if (days < 14) return '1주 후';
+    if (days < 30) return `${Math.round(days / 7)}주 후`;
+    return `${Math.round(days / 30)}달 후`;
   };
 
   const handleRetry = () => {
@@ -86,47 +100,60 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
           </div>
         </div>
 
-        {/* 추가 통계 */}
+        {/* 다음 복습 일정 */}
         <div className="border-2 border-black mb-8">
-          <div className="grid grid-cols-2 divide-x divide-black">
-            <div className="p-6 text-center">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Accuracy</p>
-              <p className="text-4xl font-mono font-bold">{accuracy}%</p>
-            </div>
-            <div className="p-6 text-center">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Avg per Word</p>
-              <p className="text-4xl font-mono font-bold">{avgTimePerWord}s</p>
-            </div>
+          <div className="border-b border-black px-4 py-2">
+            <span className="text-sm uppercase tracking-wider">Next Review</span>
           </div>
-        </div>
-
-        {/* 틀린 단어 */}
-        {wrongAnswers.length > 0 && (
-          <div className="border-2 border-black mb-8">
-            <div className="border-b border-black px-4 py-2">
-              <span className="text-sm uppercase tracking-wider">
-                Wrong Words ({wrongAnswers.length})
-              </span>
-            </div>
-            <div className="max-h-[250px] overflow-y-auto">
-              {wrongAnswers.map((item, index) => (
-                <div
-                  key={index}
-                  className={`flex justify-between items-center px-4 py-3 ${
-                    index > 0 ? 'border-t border-black' : ''
-                  }`}
-                >
+          <div className="max-h-[300px] overflow-y-auto">
+            {/* 정답 단어 */}
+            {correctAnswers.map((item, index) => (
+              <div
+                key={`correct-${index}`}
+                className={`flex justify-between items-center px-4 py-3 ${
+                  index > 0 ? 'border-t border-gray-200' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-green-600 font-mono text-sm">○</span>
                   <div>
                     <span className="font-semibold">{item.word?.english}</span>
                     <span className="text-gray-400 mx-2">—</span>
                     <span className="text-gray-600">{item.word?.korean}</span>
                   </div>
-                  <span className="tag text-xs">REVIEW</span>
                 </div>
-              ))}
-            </div>
+                <span className="font-mono text-sm text-gray-500">
+                  {formatInterval(item.interval)}
+                </span>
+              </div>
+            ))}
+
+            {/* 오답 단어 */}
+            {wrongAnswers.length > 0 && correctAnswers.length > 0 && (
+              <div className="border-t-2 border-black" />
+            )}
+            {wrongAnswers.map((item, index) => (
+              <div
+                key={`wrong-${index}`}
+                className={`flex justify-between items-center px-4 py-3 bg-gray-50 ${
+                  index > 0 ? 'border-t border-gray-200' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-red-500 font-mono text-sm">✕</span>
+                  <div>
+                    <span className="font-semibold">{item.word?.english}</span>
+                    <span className="text-gray-400 mx-2">—</span>
+                    <span className="text-gray-600">{item.word?.korean}</span>
+                  </div>
+                </div>
+                <span className="font-mono text-sm text-red-500">
+                  내일
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* 버튼 */}
         <div className="grid grid-cols-2 gap-0 border-2 border-black">
@@ -145,7 +172,7 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6 uppercase tracking-wider">
-          Session completed successfully
+          SM-2 Algorithm Applied
         </p>
       </main>
     </div>
