@@ -5,6 +5,16 @@ import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { allWordSets, getWordSetsByGrade } from '@/data/words';
+import {
+  Sun,
+  Moon,
+  XCircle,
+  BookOpen,
+  Zap,
+  Target,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
 import LearningPage from './learning/LearningPage';
 import WordSetEditor from './custom/WordSetEditor';
 import LearningCalendar from './LearningCalendar';
@@ -200,7 +210,7 @@ export default function Dashboard() {
                 onClick={toggleTheme}
                 title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
               >
-                {theme === 'dark' ? '☀️' : '🌙'}
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </button>
               <button
                 className="tag-teal hover:opacity-80 transition-opacity"
@@ -249,7 +259,7 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">❌</span>
+                    <XCircle size={28} style={{ color: 'var(--accent-error)' }} />
                     <div>
                       <p className="font-semibold" style={{ color: 'var(--accent-error)' }}>
                         틀린 단어 {wrongWordsCount}개 복습하기
@@ -280,7 +290,7 @@ export default function Dashboard() {
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">📖</span>
+                          <BookOpen size={28} />
                           <div>
                             <p className="font-semibold">{plan.name}</p>
                             <p className="text-sm text-muted-foreground">
@@ -333,7 +343,7 @@ export default function Dashboard() {
               <div className="border-2 border-foreground p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">🎯</span>
+                    <Target size={28} />
                     <div>
                       <p className="font-semibold">학습 플랜 시작하기</p>
                       <p className="text-sm text-muted-foreground">
@@ -356,7 +366,7 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">⚡</span>
+                    <Zap size={28} />
                     <div>
                       <p className="font-semibold">빠른 학습</p>
                       <p className="text-sm text-muted-foreground group-hover:text-gray-300">
@@ -490,7 +500,7 @@ export default function Dashboard() {
               onClick={() => setIsCalendarOpen(!isCalendarOpen)}
             >
               <span className="text-sm uppercase tracking-wider">Monthly Calendar</span>
-              <span className="text-muted-foreground">{isCalendarOpen ? '▲' : '▼'}</span>
+              {isCalendarOpen ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
             </button>
             {isCalendarOpen && (
               <div className="border-t border-foreground">
@@ -547,7 +557,7 @@ export default function Dashboard() {
                 onClick={() => setIsOtherWordSetsOpen(!isOtherWordSetsOpen)}
               >
                 다른 단어장 보기 ({allWordSets.length - recommendedWordSets.length}개)
-                <span>{isOtherWordSetsOpen ? '▲' : '▼'}</span>
+                {isOtherWordSetsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
               {isOtherWordSetsOpen && (
                 <div className="mt-3 space-y-0">
@@ -689,7 +699,7 @@ export default function Dashboard() {
               onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
             >
               <span className="text-sm uppercase tracking-wider">설정 · 데이터 관리</span>
-              <span className="text-muted-foreground">{isDataManagementOpen ? '▲' : '▼'}</span>
+              {isDataManagementOpen ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
             </button>
             {isDataManagementOpen && (
               <div className="border-t border-foreground">
