@@ -28,7 +28,7 @@ export default function Dashboard() {
   const [newWordSetName, setNewWordSetName] = useState('');
   const [dateStr, setDateStr] = useState<string | null>(null);
   const [todayString, setTodayString] = useState<string | null>(null);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(true);
   const [isOtherWordSetsOpen, setIsOtherWordSetsOpen] = useState(false);
   const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
