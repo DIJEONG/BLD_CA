@@ -67,7 +67,7 @@ export default function Onboarding() {
                 <div>
                   <label className="data-label block mb-2">Nickname</label>
                   <Input
-                    placeholder="닉네임을 입력하세요"
+                    placeholder="예: 영어마스터"
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     maxLength={20}
