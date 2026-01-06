@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
+import { getTodayString, getCanadaDate } from '@/lib/date';
 
 export default function LearningCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(getCanadaDate());
   const getMonthlyStats = useStore((state) => state.getMonthlyStats);
   const profile = useStore((state) => state.profile);
   const dailyGoal = profile?.dailyWordCount || 20;
@@ -52,7 +53,7 @@ export default function LearningCalendar() {
     setCurrentDate(new Date(year, month, 1));
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayString();
   const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
   const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 

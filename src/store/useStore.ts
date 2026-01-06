@@ -18,6 +18,7 @@ import {
   efToLeitnerBox,
   SM2_DEFAULTS,
 } from '@/lib/sm2';
+import { getTodayString, getDaysDiff } from '@/lib/date';
 
 interface StoreActions {
   // 온보딩
@@ -78,18 +79,7 @@ const initialState: AppState = {
   customWordSets: [],
 };
 
-// 오늘 날짜 문자열 (YYYY-MM-DD)
-function getTodayString(): string {
-  return new Date().toISOString().split('T')[0];
-}
-
-// 날짜 차이 계산 (일 단위)
-function getDaysDiff(date1: string, date2: string): number {
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
-  const diffTime = Math.abs(d2.getTime() - d1.getTime());
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-}
+// 날짜 유틸은 @/lib/date 에서 import
 
 export const useStore = create<AppState & StoreActions>()(
   persist(
