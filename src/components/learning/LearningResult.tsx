@@ -72,31 +72,31 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-12">
+      <main className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
         {/* 결과 헤더 */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8 sm:mb-12">
           <p className="text-sm uppercase tracking-wider text-gray-500 mb-4">Result</p>
-          <h1 className="text-5xl font-serif font-bold mb-4">{getMessage()}</h1>
-          <p className="font-mono text-xl">{accuracy}%</p>
+          <h1 className="text-3xl sm:text-5xl font-serif font-bold mb-4">{getMessage()}</h1>
+          <p className="font-mono text-lg sm:text-xl">{accuracy}%</p>
         </div>
 
         {/* 통계 그리드 */}
-        <div className="grid grid-cols-4 gap-0 border-2 border-black mb-8">
-          <div className="p-4 border-r border-black text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-black mb-8">
+          <div className="p-3 sm:p-4 border-r border-black border-b sm:border-b-0 text-center">
             <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Total</p>
-            <p className="text-2xl font-mono font-bold">{typingAnswers.length}</p>
+            <p className="text-xl sm:text-2xl font-mono font-bold">{typingAnswers.length}</p>
           </div>
-          <div className="p-4 border-r border-black text-center">
+          <div className="p-3 sm:p-4 sm:border-r border-black border-b sm:border-b-0 text-center">
             <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Correct</p>
-            <p className="text-2xl font-mono font-bold">{correctCount}</p>
+            <p className="text-xl sm:text-2xl font-mono font-bold">{correctCount}</p>
           </div>
-          <div className="p-4 border-r border-black text-center">
+          <div className="p-3 sm:p-4 border-r border-black text-center">
             <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Wrong</p>
-            <p className="text-2xl font-mono font-bold">{wrongCount}</p>
+            <p className="text-xl sm:text-2xl font-mono font-bold">{wrongCount}</p>
           </div>
-          <div className="p-4 text-center">
+          <div className="p-3 sm:p-4 text-center">
             <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Time</p>
-            <p className="text-2xl font-mono font-bold">{formatTime(totalTime)}</p>
+            <p className="text-xl sm:text-2xl font-mono font-bold">{formatTime(totalTime)}</p>
           </div>
         </div>
 
@@ -105,24 +105,24 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
           <div className="border-b border-black px-4 py-2">
             <span className="text-sm uppercase tracking-wider">Next Review</span>
           </div>
-          <div className="max-h-[300px] overflow-y-auto">
+          <div className="max-h-[250px] sm:max-h-[300px] overflow-y-auto">
             {/* 정답 단어 */}
             {correctAnswers.map((item, index) => (
               <div
                 key={`correct-${index}`}
-                className={`flex justify-between items-center px-4 py-3 ${
+                className={`flex justify-between items-center px-3 sm:px-4 py-2 sm:py-3 ${
                   index > 0 ? 'border-t border-gray-200' : ''
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-green-600 font-mono text-sm">○</span>
-                  <div>
-                    <span className="font-semibold">{item.word?.english}</span>
-                    <span className="text-gray-400 mx-2">—</span>
-                    <span className="text-gray-600">{item.word?.korean}</span>
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <span className="text-green-600 font-mono text-xs sm:text-sm shrink-0">○</span>
+                  <div className="min-w-0 truncate">
+                    <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
+                    <span className="text-gray-400 mx-1 sm:mx-2">—</span>
+                    <span className="text-gray-600 text-sm sm:text-base">{item.word?.korean}</span>
                   </div>
                 </div>
-                <span className="font-mono text-sm text-gray-500">
+                <span className="font-mono text-xs sm:text-sm text-gray-500 shrink-0 ml-2">
                   {formatInterval(item.interval)}
                 </span>
               </div>
@@ -135,19 +135,19 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
             {wrongAnswers.map((item, index) => (
               <div
                 key={`wrong-${index}`}
-                className={`flex justify-between items-center px-4 py-3 bg-gray-50 ${
+                className={`flex justify-between items-center px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 ${
                   index > 0 ? 'border-t border-gray-200' : ''
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-red-500 font-mono text-sm">✕</span>
-                  <div>
-                    <span className="font-semibold">{item.word?.english}</span>
-                    <span className="text-gray-400 mx-2">—</span>
-                    <span className="text-gray-600">{item.word?.korean}</span>
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <span className="text-red-500 font-mono text-xs sm:text-sm shrink-0">✕</span>
+                  <div className="min-w-0 truncate">
+                    <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
+                    <span className="text-gray-400 mx-1 sm:mx-2">—</span>
+                    <span className="text-gray-600 text-sm sm:text-base">{item.word?.korean}</span>
                   </div>
                 </div>
-                <span className="font-mono text-sm text-red-500">
+                <span className="font-mono text-xs sm:text-sm text-red-500 shrink-0 ml-2">
                   내일
                 </span>
               </div>

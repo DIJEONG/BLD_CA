@@ -163,7 +163,7 @@ export default function Dashboard() {
           <p className="text-sm uppercase tracking-wider text-gray-500 mb-2">
             Welcome back
           </p>
-          <h2 className="text-4xl font-serif font-bold mb-4">
+          <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4">
             {profile?.nickname}님, 오늘도 학습해볼까요?
           </h2>
           {currentStreak > 0 && (
@@ -174,26 +174,26 @@ export default function Dashboard() {
         </div>
 
         {/* 통계 그리드 */}
-        <div className="grid grid-cols-4 gap-0 border-2 border-black mb-8">
-          <div className="p-4 border-r border-black">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-black mb-8">
+          <div className="p-3 sm:p-4 border-r border-black border-b sm:border-b-0">
             <p className="data-label">오늘 학습</p>
             <p className="data-value font-mono">
               {todayStats?.wordsStudied || 0}/{dailyGoal}
             </p>
           </div>
-          <div className="p-4 border-r border-black">
+          <div className="p-3 sm:p-4 sm:border-r border-black border-b sm:border-b-0">
             <p className="data-label">정답</p>
             <p className="data-value font-mono text-black">
               {todayStats?.correctCount || 0}
             </p>
           </div>
-          <div className="p-4 border-r border-black">
+          <div className="p-3 sm:p-4 border-r border-black">
             <p className="data-label">오답</p>
             <p className="data-value font-mono">
               {todayStats?.wrongCount || 0}
             </p>
           </div>
-          <div className="p-4">
+          <div className="p-3 sm:p-4">
             <p className="data-label">정답률</p>
             <p className="data-value font-mono">
               {todayStats && (todayStats.correctCount + todayStats.wrongCount) > 0
@@ -269,7 +269,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-7 h-28">
+                <div className="grid grid-cols-7 h-24 sm:h-28">
                   {weeklyStats.map((stat, i) => {
                     const height = stat.wordsStudied > 0
                       ? Math.max((stat.wordsStudied / dailyGoal) * 100, 10)
@@ -280,7 +280,7 @@ export default function Dashboard() {
                     return (
                       <div
                         key={i}
-                        className={`flex flex-col items-center justify-end p-2 ${
+                        className={`flex flex-col items-center justify-end p-1 sm:p-2 ${
                           i < 6 ? 'border-r border-black' : ''
                         }`}
                       >
@@ -295,7 +295,7 @@ export default function Dashboard() {
                             <div className={`w-1.5 h-1.5 ${isToday ? 'bg-black' : 'border border-gray-300'}`} />
                           </div>
                         )}
-                        <span className={`text-xs mt-1 font-mono ${isToday ? 'font-bold' : 'text-gray-400'}`}>
+                        <span className={`text-[10px] sm:text-xs mt-1 font-mono ${isToday ? 'font-bold' : 'text-gray-400'}`}>
                           {day}
                         </span>
                       </div>
@@ -437,11 +437,11 @@ export default function Dashboard() {
               {customWordSets.map((wordSet, index) => (
                 <div
                   key={wordSet.id}
-                  className={`flex justify-between items-center p-4 border-2 border-black ${
+                  className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border-2 border-black ${
                     index > 0 ? 'border-t-0' : ''
                   }`}
                 >
-                  <div>
+                  <div className="mb-2 sm:mb-0">
                     <h4 className="font-semibold">{wordSet.name}</h4>
                     <p className="text-sm text-gray-500 font-mono">
                       {wordSet.words.length} WORDS

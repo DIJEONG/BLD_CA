@@ -193,33 +193,35 @@ export default function WordSetEditor({
           {/* 단어장 이름 */}
           <div className="mt-4">
             {isEditingName ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <Input
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="text-2xl font-serif font-bold border-2 border-black"
+                  className="text-xl sm:text-2xl font-serif font-bold border-2 border-black"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveName();
                     if (e.key === 'Escape') setIsEditingName(false);
                   }}
                 />
-                <button
-                  className="tag-filled hover:bg-white hover:text-black transition-colors"
-                  onClick={handleSaveName}
-                >
-                  SAVE
-                </button>
-                <button
-                  className="tag hover:bg-black hover:text-white transition-colors"
-                  onClick={() => setIsEditingName(false)}
-                >
-                  CANCEL
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    className="tag-filled hover:bg-white hover:text-black transition-colors"
+                    onClick={handleSaveName}
+                  >
+                    SAVE
+                  </button>
+                  <button
+                    className="tag hover:bg-black hover:text-white transition-colors"
+                    onClick={() => setIsEditingName(false)}
+                  >
+                    CANCEL
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-serif font-bold">{wordSet.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-serif font-bold">{wordSet.name}</h1>
                 <button
                   className="tag hover:bg-black hover:text-white transition-colors"
                   onClick={() => {
@@ -299,13 +301,14 @@ export default function WordSetEditor({
                   </button>
                 </div>
                 <div className="border-t border-black max-h-[200px] overflow-y-auto">
-                  <div className="grid grid-cols-3 gap-0">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
                     {extractedWords.map((word, index) => (
                       <button
                         key={word}
-                        className={`p-2 text-sm text-left border-b border-r border-black
+                        className={`p-2 text-xs sm:text-sm text-left border-b border-r border-black
                           ${selectedWords.has(word) ? 'bg-black text-white' : 'hover:bg-gray-100'}
-                          ${index % 3 === 2 ? 'border-r-0' : ''}
+                          ${index % 3 === 2 ? 'sm:border-r-0' : ''}
+                          ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
                         `}
                         onClick={() => toggleWordSelection(word)}
                       >
@@ -350,27 +353,27 @@ export default function WordSetEditor({
               {wordSet.words.map((word, index) => (
                 <div
                   key={word.id}
-                  className={`flex items-center justify-between p-4 border-2 border-black ${
+                  className={`flex items-center justify-between p-3 sm:p-4 border-2 border-black ${
                     index > 0 ? 'border-t-0' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="w-8 h-8 flex items-center justify-center border-2 border-black font-mono text-sm font-bold">
+                  <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                    <span className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center border-2 border-black font-mono text-xs sm:text-sm font-bold shrink-0">
                       {index + 1}
                     </span>
-                    <div>
-                      <span className="font-semibold">{word.english}</span>
-                      <span className="text-gray-400 mx-2">—</span>
-                      <span>{word.korean}</span>
+                    <div className="min-w-0">
+                      <span className="font-semibold text-sm sm:text-base">{word.english}</span>
+                      <span className="text-gray-400 mx-1 sm:mx-2">—</span>
+                      <span className="text-sm sm:text-base">{word.korean}</span>
                       {word.pronunciation && (
-                        <span className="text-sm text-gray-500 ml-2 font-mono">
+                        <span className="text-xs sm:text-sm text-gray-500 ml-1 sm:ml-2 font-mono hidden sm:inline">
                           [{word.pronunciation}]
                         </span>
                       )}
                     </div>
                   </div>
                   <button
-                    className="tag hover:bg-black hover:text-white transition-colors"
+                    className="tag hover:bg-black hover:text-white transition-colors shrink-0 ml-2"
                     onClick={() => handleRemoveWord(word.id)}
                   >
                     ×

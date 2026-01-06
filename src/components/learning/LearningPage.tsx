@@ -276,7 +276,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             <p className="text-sm uppercase tracking-wider text-gray-500 mb-2">
               {wrongWordsMode ? 'Wrong Words Review' : "Today's Session"}
             </p>
-            <h1 className="text-4xl font-serif font-bold mb-2">
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold mb-2">
               {previewWords.length} WORDS
             </h1>
             {wrongWordsMode ? (
@@ -292,15 +292,15 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
           {/* 학습 단계 안내 */}
           <div className="grid grid-cols-2 gap-0 border-2 border-black mb-8">
-            <div className="p-6 border-r border-black text-center">
+            <div className="p-4 sm:p-6 border-r border-black text-center">
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Phase 1</p>
-              <h3 className="font-serif font-bold text-lg">FLASHCARD</h3>
-              <p className="text-sm text-gray-500 mt-1">암기</p>
+              <h3 className="font-serif font-bold text-base sm:text-lg">FLASHCARD</h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">암기</p>
             </div>
-            <div className="p-6 text-center">
+            <div className="p-4 sm:p-6 text-center">
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Phase 2</p>
-              <h3 className="font-serif font-bold text-lg">TYPING</h3>
-              <p className="text-sm text-gray-500 mt-1">테스트</p>
+              <h3 className="font-serif font-bold text-base sm:text-lg">TYPING</h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">테스트</p>
             </div>
           </div>
 
@@ -317,24 +317,24 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                 </button>
               )}
             </div>
-            <div className="max-h-[350px] overflow-y-auto">
+            <div className="max-h-[300px] sm:max-h-[350px] overflow-y-auto">
               {previewWords.map((word, index) => {
                 const isReview = reviewWordIds.has(word.id);
                 return (
                   <div
                     key={word.id}
-                    className={`flex items-center gap-4 px-4 py-3 ${
+                    className={`flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 ${
                       index > 0 ? 'border-t border-black' : ''
                     } ${isReview ? 'bg-gray-50' : ''}`}
                   >
-                    <span className="font-mono text-sm w-8">{String(index + 1).padStart(2, '0')}</span>
-                    <div className="flex-1">
-                      <span className="font-semibold">{word.english}</span>
-                      <span className="text-gray-400 mx-2">—</span>
-                      <span className="text-gray-600">{word.korean}</span>
+                    <span className="font-mono text-xs sm:text-sm w-6 sm:w-8">{String(index + 1).padStart(2, '0')}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-sm sm:text-base">{word.english}</span>
+                      <span className="text-gray-400 mx-1 sm:mx-2">—</span>
+                      <span className="text-gray-600 text-sm sm:text-base">{word.korean}</span>
                     </div>
                     {isReview && (
-                      <span className="tag text-xs">{wrongWordsMode ? 'WRONG' : 'REVIEW'}</span>
+                      <span className="tag text-[10px] sm:text-xs shrink-0">{wrongWordsMode ? 'WRONG' : 'REVIEW'}</span>
                     )}
                   </div>
                 );
@@ -375,26 +375,26 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
           </div>
         </header>
 
-        <main className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <main className="max-w-2xl mx-auto px-4 py-8 sm:py-16 text-center">
           <p className="text-sm uppercase tracking-wider text-gray-500 mb-4">
             Phase 1 Complete
           </p>
-          <h1 className="text-5xl font-serif font-bold mb-8">FLASHCARD DONE</h1>
+          <h1 className="text-3xl sm:text-5xl font-serif font-bold mb-8">FLASHCARD DONE</h1>
 
           <div className="grid grid-cols-2 gap-0 border-2 border-black mb-8 max-w-sm mx-auto">
-            <div className="p-6 border-r border-black">
+            <div className="p-4 sm:p-6 border-r border-black">
               <p className="data-label">알았다</p>
               <p className="data-value font-mono">{flashcardProgress.knew}</p>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <p className="data-label">몰랐다</p>
               <p className="data-value font-mono">{flashcardProgress.didntKnow}</p>
             </div>
           </div>
 
-          <div className="border-2 border-black p-6 mb-8 max-w-sm mx-auto">
+          <div className="border-2 border-black p-4 sm:p-6 mb-8 max-w-sm mx-auto">
             <p className="text-sm uppercase tracking-wider text-gray-500 mb-2">Next</p>
-            <h3 className="font-serif font-bold text-xl">PHASE 2: TYPING</h3>
+            <h3 className="font-serif font-bold text-lg sm:text-xl">PHASE 2: TYPING</h3>
             <p className="text-sm text-gray-500 mt-2">직접 입력해서 테스트해보세요</p>
           </div>
 
@@ -455,30 +455,30 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
           </div>
         </header>
 
-        <main className="max-w-2xl mx-auto px-4 py-12">
+        <main className="max-w-2xl mx-auto px-4 py-6 sm:py-12">
           <div className="border-2 border-black">
             <div className="border-b border-black px-4 py-2">
               <span className="text-xs uppercase tracking-wider text-gray-500">뜻</span>
             </div>
-            <div className="p-8 text-center">
-              <h2 className="text-3xl font-serif font-bold">{currentWord.korean}</h2>
+            <div className="p-4 sm:p-8 text-center">
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold">{currentWord.korean}</h2>
             </div>
 
             <div
-              className={`min-h-[200px] flex flex-col items-center justify-center border-t-2 border-black p-8 ${
+              className={`min-h-[150px] sm:min-h-[200px] flex flex-col items-center justify-center border-t-2 border-black p-4 sm:p-8 ${
                 !isRevealed ? 'cursor-pointer hover:bg-gray-50' : ''
               }`}
               onClick={!isRevealed ? handleReveal : undefined}
             >
               {!isRevealed ? (
                 <>
-                  <p className="text-gray-400 uppercase tracking-wider mb-2">Click to reveal</p>
+                  <p className="text-gray-400 uppercase tracking-wider mb-2 text-sm sm:text-base">Click to reveal</p>
                   <p className="text-xs text-gray-300">SPACE / ENTER</p>
                 </>
               ) : (
                 <>
-                  <div className="flex items-center justify-center gap-3 mb-2">
-                    <p className="text-4xl font-serif font-bold">
+                  <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+                    <p className="text-2xl sm:text-4xl font-serif font-bold">
                       {currentWord.english}
                     </p>
                     {isTTSSupported() && (
@@ -487,7 +487,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                           e.stopPropagation();
                           speak(currentWord.english);
                         }}
-                        className="p-2 border border-black hover:bg-black hover:text-white transition-colors"
+                        className="p-1.5 sm:p-2 border border-black hover:bg-black hover:text-white transition-colors text-sm sm:text-base"
                         title="발음 듣기"
                       >
                         🔊
@@ -495,7 +495,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                     )}
                   </div>
                   {currentWord.pronunciation && (
-                    <p className="text-gray-500 font-mono">
+                    <p className="text-gray-500 font-mono text-sm sm:text-base">
                       {currentWord.pronunciation}
                     </p>
                   )}
@@ -506,28 +506,28 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             {isRevealed && (
               <div className="grid grid-cols-3 border-t-2 border-black">
                 <button
-                  className="py-6 border-r border-black hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold text-sm"
+                  className="py-4 sm:py-6 border-r border-black hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
                   onClick={() => handleMarkFlashcard(false)}
                 >
-                  ✕ 몰랐다
+                  <span className="hidden sm:inline">✕ </span>몰랐다
                 </button>
                 <button
-                  className="py-6 border-r border-black hover:bg-gray-100 transition-colors uppercase tracking-wider font-semibold text-sm"
+                  className="py-4 sm:py-6 border-r border-black hover:bg-gray-100 transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
                   onClick={() => handleMarkFlashcard(true, 'unsure')}
                 >
-                  △ 애매함
+                  <span className="hidden sm:inline">△ </span>애매함
                 </button>
                 <button
-                  className="py-6 hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold text-sm"
+                  className="py-4 sm:py-6 hover:bg-black hover:text-white transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
                   onClick={() => handleMarkFlashcard(true, 'sure')}
                 >
-                  ○ 확실함
+                  <span className="hidden sm:inline">○ </span>확실함
                 </button>
               </div>
             )}
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider">
+          <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider hidden sm:block">
             {!isRevealed
               ? 'SPACE / ENTER: Reveal'
               : '1/→: 확실함  |  2/↑: 애매함  |  3/←: 몰랐다'
@@ -585,26 +585,26 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
           </div>
         </header>
 
-        <main className="max-w-2xl mx-auto px-4 py-12">
+        <main className="max-w-2xl mx-auto px-4 py-6 sm:py-12">
           <div className="border-2 border-black">
             <div className="border-b border-black px-4 py-2">
               <span className="text-xs uppercase tracking-wider text-gray-500">뜻</span>
             </div>
-            <div className="p-8 text-center">
-              <h2 className="text-2xl font-serif font-bold">{currentWord.korean}</h2>
+            <div className="p-4 sm:p-8 text-center">
+              <h2 className="text-xl sm:text-2xl font-serif font-bold">{currentWord.korean}</h2>
             </div>
 
             {/* 최종 정답/오답 공개 */}
             {isTypingRevealed && (
-              <div className={`border-t-2 border-black p-6 text-center ${
+              <div className={`border-t-2 border-black p-4 sm:p-6 text-center ${
                 isCorrect ? 'bg-green-50' : 'bg-red-50'
               }`}>
-                <p className={`text-2xl font-bold mb-3 ${
+                <p className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 ${
                   isCorrect ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {isCorrect ? '정답!' : '오답'}
                 </p>
-                <p className="text-3xl font-serif font-bold">{currentWord.english}</p>
+                <p className="text-2xl sm:text-3xl font-serif font-bold">{currentWord.english}</p>
               </div>
             )}
 
