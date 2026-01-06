@@ -51,12 +51,11 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
   }, [wordSetId, getCustomWordSets]);
 
   // 모든 단어장(기본 + 커스텀)에서 단어 ID로 검색
-  const getAllWordsByIds = useCallback((wordIds: string[]): Word[] => {
+  const findAllWordsByIds = (wordIds: string[], customSets: ReturnType<typeof getCustomWordSets>): Word[] => {
     const builtInWords = getWordsByIds(wordIds);
     const foundIds = new Set(builtInWords.map(w => w.id));
 
     // 커스텀 단어장에서도 검색
-    const customSets = getCustomWordSets();
     const customWords: Word[] = [];
 
     for (const ws of customSets) {
@@ -69,7 +68,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     }
 
     return [...builtInWords, ...customWords];
-  }, [getCustomWordSets]);
+  };
 
   const {
     isActive,
@@ -107,7 +106,8 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
       if (wrongWordsMode) {
         const wrongProgress = getWrongWords();
         const wrongWordIdsArray = wrongProgress.map(p => p.wordId);
-        const wrongWordObjects = getAllWordsByIds(wrongWordIdsArray);
+        const customSets = getCustomWordSets();
+        const wrongWordObjects = findAllWordsByIds(wrongWordIdsArray, customSets);
 
         setReviewWordIds(new Set(wrongWordIdsArray));
         setPreviewWords(wrongWordObjects);
@@ -133,7 +133,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         setInitialized(true);
       }
     }
-  }, [wordSet, initialized, dailyGoal, getWordsForReview, wrongWordsMode, getWrongWords, getAllWordsByIds]);
+  }, [wordSet, initialized, dailyGoal, getWordsForReview, wrongWordsMode, getWrongWords, getCustomWordSets]);
 
   useEffect(() => {
     if (isActive && (phase === 'flashcard' || phase === 'typing')) {
@@ -269,10 +269,47 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
   // ===== 미리보기 단계 =====
   if (phase === 'preview') {
-    if (!initialized || previewWords.length === 0) {
+    // 초기화 중
+    if (!initialized) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <p className="text-gray-500 uppercase tracking-wider">Loading...</p>
+        </div>
+      );
+    }
+
+    // 학습할 단어가 없는 경우
+    if (previewWords.length === 0) {
+      return (
+        <div className="min-h-screen bg-white">
+          <header className="border-b-2 border-black">
+            <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
+              <button
+                className="tag hover:bg-black hover:text-white transition-colors"
+                onClick={onFinish}
+              >
+                ← EXIT
+              </button>
+              <span className="font-mono text-sm">{wrongWordsMode ? '오답 복습' : wordSet?.name}</span>
+              <div className="w-16" />
+            </div>
+          </header>
+          <main className="max-w-2xl mx-auto px-4 py-16 text-center">
+            <h1 className="text-2xl font-serif font-bold mb-4">
+              {wrongWordsMode ? '복습할 오답이 없습니다' : '학습할 단어가 없습니다'}
+            </h1>
+            <p className="text-gray-500 mb-8">
+              {wrongWordsMode
+                ? '틀린 단어가 없거나 해당 단어장이 삭제되었습니다.'
+                : '단어장에 단어가 없습니다.'}
+            </p>
+            <button
+              className="tag hover:bg-black hover:text-white transition-colors"
+              onClick={onFinish}
+            >
+              돌아가기
+            </button>
+          </main>
         </div>
       );
     }
