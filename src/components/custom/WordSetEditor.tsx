@@ -1,15 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
 import { Input } from '@/components/ui/input';
 import AddWordForm from './AddWordForm';
 import { translateToKorean } from '@/lib/translate';
+import { Word } from '@/types';
 
 interface WordSetEditorProps {
   wordSetId: string;
   onBack: () => void;
-  onStartLearning: (wordSetId: string) => void;
+  onStartLearning: (wordSetId: string, filterWords?: Word[]) => void;
+}
+
+// 날짜별 단어 그룹
+interface DateGroup {
+  date: string;  // YYYY-MM-DD or 'legacy'
+  label: string; // 표시용 라벨
+  words: Word[];
 }
 
 export default function WordSetEditor({
@@ -38,6 +46,45 @@ export default function WordSetEditor({
   const deleteCustomWordSet = useStore((state) => state.deleteCustomWordSet);
   const removeWordFromCustomSet = useStore((state) => state.removeWordFromCustomSet);
   const addWordToCustomSet = useStore((state) => state.addWordToCustomSet);
+
+  // 날짜별 단어 그룹핑
+  const dateGroups = useMemo((): DateGroup[] => {
+    if (!wordSet) return [];
+
+    const groups: Map<string, Word[]> = new Map();
+
+    wordSet.words.forEach(word => {
+      const date = word.addedAt || 'legacy';
+      if (!groups.has(date)) {
+        groups.set(date, []);
+      }
+      groups.get(date)!.push(word);
+    });
+
+    // 날짜 포맷팅 함수
+    const formatDate = (dateStr: string): string => {
+      if (dateStr === 'legacy') return '이전 단어';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    };
+
+    // 날짜 내림차순 정렬 (최신 먼저), legacy는 맨 뒤로
+    const sortedDates = Array.from(groups.keys()).sort((a, b) => {
+      if (a === 'legacy') return 1;
+      if (b === 'legacy') return -1;
+      return b.localeCompare(a);
+    });
+
+    return sortedDates.map(date => ({
+      date,
+      label: formatDate(date),
+      words: groups.get(date)!,
+    }));
+  }, [wordSet]);
 
   // 단어장이 없으면 (삭제된 경우) 돌아가기
   if (!wordSet) {
@@ -339,7 +386,7 @@ export default function WordSetEditor({
           <AddWordForm wordSetId={wordSet.id} />
         </div>
 
-        {/* 단어 목록 */}
+        {/* 단어 목록 - 날짜별 그룹 */}
         <div>
           <h2 className="section-title">단어 목록</h2>
 
@@ -349,35 +396,55 @@ export default function WordSetEditor({
               <p className="text-sm text-gray-400 mt-1">위에서 단어를 추가해보세요</p>
             </div>
           ) : (
-            <div className="space-y-0">
-              {wordSet.words.map((word, index) => (
-                <div
-                  key={word.id}
-                  className={`flex items-center justify-between p-3 sm:p-4 border-2 border-black ${
-                    index > 0 ? 'border-t-0' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                    <span className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center border-2 border-black font-mono text-xs sm:text-sm font-bold shrink-0">
-                      {index + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <span className="font-semibold text-sm sm:text-base">{word.english}</span>
-                      <span className="text-gray-400 mx-1 sm:mx-2">—</span>
-                      <span className="text-sm sm:text-base">{word.korean}</span>
-                      {word.pronunciation && (
-                        <span className="text-xs sm:text-sm text-gray-500 ml-1 sm:ml-2 font-mono hidden sm:inline">
-                          [{word.pronunciation}]
-                        </span>
-                      )}
+            <div className="space-y-6">
+              {dateGroups.map((group) => (
+                <div key={group.date} className="border-2 border-black">
+                  {/* 날짜 헤더 */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-black">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm">{group.label}</span>
+                      <span className="text-xs text-gray-500 font-mono">({group.words.length})</span>
                     </div>
+                    <button
+                      className="tag-teal text-[10px] sm:text-xs"
+                      onClick={() => onStartLearning(wordSet.id, group.words)}
+                    >
+                      학습
+                    </button>
                   </div>
-                  <button
-                    className="tag hover:bg-black hover:text-white transition-colors shrink-0 ml-2"
-                    onClick={() => handleRemoveWord(word.id)}
-                  >
-                    ×
-                  </button>
+
+                  {/* 해당 날짜 단어들 */}
+                  {group.words.map((word, index) => (
+                    <div
+                      key={word.id}
+                      className={`flex items-center justify-between p-3 sm:p-4 ${
+                        index > 0 ? 'border-t border-black' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                        <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-gray-400 font-mono text-xs shrink-0">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-sm sm:text-base">{word.english}</span>
+                          <span className="text-gray-400 mx-1 sm:mx-2">—</span>
+                          <span className="text-sm sm:text-base">{word.korean}</span>
+                          {word.pronunciation && (
+                            <span className="text-xs sm:text-sm text-gray-500 ml-1 sm:ml-2 font-mono hidden sm:inline">
+                              [{word.pronunciation}]
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        className="text-gray-400 hover:text-black transition-colors shrink-0 ml-2 text-lg"
+                        onClick={() => handleRemoveWord(word.id)}
+                        title="삭제"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

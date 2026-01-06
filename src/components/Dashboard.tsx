@@ -10,11 +10,13 @@ import WordSetEditor from './custom/WordSetEditor';
 import LearningCalendar from './LearningCalendar';
 import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
 import { getCanadaDate, getTodayString } from '@/lib/date';
+import { Word } from '@/types';
 
 export default function Dashboard() {
   const [isLearning, setIsLearning] = useState(false);
   const [selectedWordSetId, setSelectedWordSetId] = useState<string | null>(null);
   const [isWrongWordsMode, setIsWrongWordsMode] = useState(false);
+  const [customWords, setCustomWords] = useState<Word[] | null>(null);
   const [editingWordSetId, setEditingWordSetId] = useState<string | null>(null);
   const [isCreatingWordSet, setIsCreatingWordSet] = useState(false);
   const [newWordSetName, setNewWordSetName] = useState('');
@@ -62,8 +64,9 @@ export default function Dashboard() {
 
   const recommendedWordSets = profile ? getWordSetsByGrade(profile.gradeLevel) : allWordSets;
 
-  const handleStartLearning = (wordSetId: string) => {
+  const handleStartLearning = (wordSetId: string, filterWords?: Word[]) => {
     setSelectedWordSetId(wordSetId);
+    setCustomWords(filterWords || null);
     setIsLearning(true);
   };
 
@@ -71,6 +74,7 @@ export default function Dashboard() {
     setIsLearning(false);
     setSelectedWordSetId(null);
     setIsWrongWordsMode(false);
+    setCustomWords(null);
   };
 
   const handleStartWrongWordsReview = () => {
@@ -131,6 +135,7 @@ export default function Dashboard() {
         wordSetId={selectedWordSetId}
         onFinish={handleFinishLearning}
         wrongWordsMode={isWrongWordsMode}
+        customWords={customWords || undefined}
       />
     );
   }

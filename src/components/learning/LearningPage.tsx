@@ -14,11 +14,12 @@ interface LearningPageProps {
   wordSetId: string;
   onFinish: () => void;
   wrongWordsMode?: boolean;
+  customWords?: Word[];  // 특정 단어만 학습할 때 (일자별 학습 등)
 }
 
 type LearningPhase = 'preview' | 'flashcard' | 'typing' | 'result';
 
-export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = false }: LearningPageProps) {
+export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = false, customWords }: LearningPageProps) {
   const [phase, setPhase] = useState<LearningPhase>('preview');
   const [elapsedTime, setElapsedTime] = useState(0);
   const [initialized, setInitialized] = useState(false);
@@ -105,6 +106,13 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
   useEffect(() => {
     if (!initialized) {
+      // customWords가 제공된 경우 (일자별 학습 등)
+      if (customWords && customWords.length > 0) {
+        setPreviewWords(customWords);
+        setInitialized(true);
+        return;
+      }
+
       // 오답 복습 모드
       if (wrongWordsMode) {
         const wrongProgress = getWrongWords();
@@ -171,7 +179,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         setInitialized(true);
       }
     }
-  }, [wordSet, initialized, dailyGoal, getWordsForReview, wrongWordsMode, getWrongWords, getCustomWordSets]);
+  }, [wordSet, initialized, dailyGoal, getWordsForReview, wrongWordsMode, getWrongWords, getCustomWordSets, customWords]);
 
   useEffect(() => {
     if (isActive && (phase === 'flashcard' || phase === 'typing')) {

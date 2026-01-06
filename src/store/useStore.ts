@@ -371,6 +371,7 @@ export const useStore = create<AppState & StoreActions>()(
         const newWord: Word = {
           id: `cw-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           ...word,
+          addedAt: getTodayString(),  // 추가된 날짜 자동 기록
         };
 
         set((state) => ({

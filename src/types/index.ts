@@ -4,6 +4,7 @@ export interface Word {
   english: string;
   korean: string;
   pronunciation?: string;
+  addedAt?: string;  // 추가된 날짜 (YYYY-MM-DD) - 커스텀 단어장용
 }
 
 // 단어장 타입
