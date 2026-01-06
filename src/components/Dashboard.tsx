@@ -22,21 +22,18 @@ export default function Dashboard() {
   const [todayString, setTodayString] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 클라이언트에서만 캐나다 시간대 적용
+  // 클라이언트에서만 날짜 설정 (브라우저 로컬 시간 사용)
   useEffect(() => {
-    // 강제로 클라이언트 시간 사용
     const now = new Date();
-    const canadaOptions: Intl.DateTimeFormatOptions = {
-      timeZone: 'America/Toronto',
-    };
 
-    // 캐나다 시간대의 날짜 문자열
-    const canadaDateStr = now.toLocaleDateString('en-CA', canadaOptions);
-    setTodayString(canadaDateStr);
+    // 로컬 시간 기준 오늘 날짜 (YYYY-MM-DD)
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    setTodayString(`${year}-${month}-${day}`);
 
     // 한국어 형식 날짜
     setDateStr(now.toLocaleDateString('ko-KR', {
-      ...canadaOptions,
       year: 'numeric',
       month: 'long',
       day: 'numeric',

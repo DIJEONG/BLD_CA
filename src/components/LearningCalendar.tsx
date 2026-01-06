@@ -11,20 +11,18 @@ export default function LearningCalendar() {
   const profile = useStore((state) => state.profile);
   const dailyGoal = profile?.dailyWordCount || 20;
 
-  // 클라이언트에서만 캐나다 시간대 적용
+  // 클라이언트에서만 날짜 설정 (브라우저 로컬 시간 사용)
   useEffect(() => {
     const now = new Date();
-    const canadaOptions: Intl.DateTimeFormatOptions = {
-      timeZone: 'America/Toronto',
-    };
 
-    // 캐나다 시간대 기준 오늘 날짜
-    const todayStr = now.toLocaleDateString('en-CA', canadaOptions);
+    // 로컬 시간 기준 오늘 날짜 (YYYY-MM-DD)
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
     setToday(todayStr);
-
-    // 캐나다 시간대 기준 현재 Date 객체
-    const canadaDateStr = now.toLocaleString('en-US', canadaOptions);
-    setCurrentDate(new Date(canadaDateStr));
+    setCurrentDate(now);
   }, []);
 
   const year = currentDate?.getFullYear() ?? new Date().getFullYear();
