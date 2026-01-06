@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Gowun_Batang, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const gowunBatang = Gowun_Batang({
@@ -73,6 +74,7 @@ export default function RootLayout({
         className={`${gowunBatang.variable} ${jetbrainsMono.variable} antialiased min-h-screen bg-background`}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );
