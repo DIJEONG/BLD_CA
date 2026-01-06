@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLearningStore } from '@/store/useLearningStore';
 import { useStore } from '@/store/useStore';
 import { getWordSetById, getWordsByIds } from '@/data/words';
+import { getTodayString } from '@/lib/date';
 import { Word, WordSet, Confidence } from '@/types';
 import { Input } from '@/components/ui/input';
 import LearningResult from './LearningResult';
@@ -118,19 +119,54 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
       // 일반 모드
       if (wordSet) {
-        const reviewProgress = getWordsForReview();
-        const reviewWordIdsArray = reviewProgress.map(p => p.wordId);
-        const reviewWords = getWordsByIds(reviewWordIdsArray);
+        const wordProgress = useStore.getState().wordProgress;
 
-        const remainingCount = Math.max(0, dailyGoal - reviewWords.length);
-        const newWords = wordSet.words
-          .filter(w => !reviewWordIdsArray.includes(w.id))
-          .slice(0, remainingCount);
+        // 단어를 카테고리별로 분류
+        const newWords: Word[] = []; // 처음 보는 단어
+        const learningWords: Word[] = []; // 학습 중 (box 1-2 또는 repetitionCount < 3)
+        const reviewWords: Word[] = []; // 복습 필요 (오늘 복습 예정)
+        const memorizedWords: Word[] = []; // 외운 단어 (box 4-5 또는 repetitionCount >= 5)
 
-        const wordsToStudy = [...reviewWords, ...newWords];
+        const today = getTodayString();
 
+        for (const word of wordSet.words) {
+          const progress = wordProgress[word.id];
+
+          if (!progress || progress.attemptCount === 0) {
+            // 한 번도 학습하지 않은 새 단어
+            newWords.push(word);
+          } else if (progress.nextReviewDate && progress.nextReviewDate <= today) {
+            // 오늘 복습 예정인 단어
+            reviewWords.push(word);
+          } else if (progress.box >= 4 || (progress.repetitionCount && progress.repetitionCount >= 5)) {
+            // 충분히 외운 단어 (뒤로)
+            memorizedWords.push(word);
+          } else {
+            // 학습 중인 단어
+            learningWords.push(word);
+          }
+        }
+
+        // 각 카테고리 내에서 셔플
+        const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+
+        const shuffledNew = shuffle(newWords);
+        const shuffledLearning = shuffle(learningWords);
+        const shuffledReview = shuffle(reviewWords);
+        const shuffledMemorized = shuffle(memorizedWords);
+
+        // 우선순위: 복습 → 새 단어 → 학습 중 → 외운 단어
+        const prioritizedWords = [
+          ...shuffledReview,
+          ...shuffledNew,
+          ...shuffledLearning,
+          ...shuffledMemorized,
+        ].slice(0, dailyGoal);
+
+        // 복습 단어 ID 설정 (UI 표시용)
+        const reviewWordIdsArray = reviewWords.map(w => w.id);
         setReviewWordIds(new Set(reviewWordIdsArray));
-        setPreviewWords(wordsToStudy);
+        setPreviewWords(prioritizedWords);
         setInitialized(true);
       }
     }
@@ -164,21 +200,45 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     setPhase('flashcard');
   };
 
-  // 다른 단어로 섞기
+  // 다른 단어로 섞기 (스마트 알고리즘)
   const handleShuffleWords = () => {
     if (!wordSet || wrongWordsMode) return;
 
-    const reviewProgress = getWordsForReview();
-    const reviewWordIdsArray = reviewProgress.map(p => p.wordId);
-    const reviewWords = getWordsByIds(reviewWordIdsArray);
+    const wordProgress = useStore.getState().wordProgress;
+    const today = getTodayString();
 
-    // 복습 단어 제외한 나머지에서 랜덤 선택
-    const availableWords = wordSet.words.filter(w => !reviewWordIdsArray.includes(w.id));
-    const shuffled = [...availableWords].sort(() => Math.random() - 0.5);
-    const remainingCount = Math.max(0, dailyGoal - reviewWords.length);
-    const newWords = shuffled.slice(0, remainingCount);
+    // 단어 분류
+    const newWords: Word[] = [];
+    const learningWords: Word[] = [];
+    const reviewWords: Word[] = [];
+    const memorizedWords: Word[] = [];
 
-    setPreviewWords([...reviewWords, ...newWords]);
+    for (const word of wordSet.words) {
+      const progress = wordProgress[word.id];
+
+      if (!progress || progress.attemptCount === 0) {
+        newWords.push(word);
+      } else if (progress.nextReviewDate && progress.nextReviewDate <= today) {
+        reviewWords.push(word);
+      } else if (progress.box >= 4 || (progress.repetitionCount && progress.repetitionCount >= 5)) {
+        memorizedWords.push(word);
+      } else {
+        learningWords.push(word);
+      }
+    }
+
+    // 셔플
+    const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
+
+    const prioritizedWords = [
+      ...shuffle(reviewWords),
+      ...shuffle(newWords),
+      ...shuffle(learningWords),
+      ...shuffle(memorizedWords),
+    ].slice(0, dailyGoal);
+
+    setReviewWordIds(new Set(reviewWords.map(w => w.id)));
+    setPreviewWords(prioritizedWords);
   };
 
   const handleStartTyping = () => {
