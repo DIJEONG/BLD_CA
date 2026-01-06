@@ -88,6 +88,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     startTypingPhase,
     setUserInput,
     submitTypingAnswer,
+    giveUpTyping,
     nextTypingWord,
     getTypingProgress,
     completeSession,
@@ -720,13 +721,25 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
               />
 
               {!isTypingRevealed ? (
-                <button
-                  type="submit"
-                  className="w-full py-4 border-t-2 border-black bg-black text-white uppercase tracking-wider font-semibold hover:bg-white hover:text-black transition-colors disabled:opacity-50"
-                  disabled={!userInput.trim()}
-                >
-                  {attemptCount === 1 ? 'CHECK' : 'TRY AGAIN'}
-                </button>
+                <div className="grid grid-cols-2 border-t-2 border-black">
+                  <button
+                    type="button"
+                    className="py-4 border-r border-black uppercase tracking-wider font-semibold text-sm transition-colors"
+                    style={{ backgroundColor: 'var(--accent-error-light)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error-light)'}
+                    onClick={giveUpTyping}
+                  >
+                    모름
+                  </button>
+                  <button
+                    type="submit"
+                    className="py-4 bg-black text-white uppercase tracking-wider font-semibold hover:bg-white hover:text-black transition-colors disabled:opacity-50"
+                    disabled={!userInput.trim()}
+                  >
+                    {attemptCount === 1 ? 'CHECK' : 'TRY AGAIN'}
+                  </button>
+                </div>
               ) : (
                 <button
                   type="button"

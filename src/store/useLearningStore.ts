@@ -51,6 +51,7 @@ interface LearningState {
   startTypingPhase: () => void;
   setUserInput: (input: string) => void;
   submitTypingAnswer: () => void;
+  giveUpTyping: () => void;
   nextTypingWord: () => void;
   isTypingComplete: () => boolean;
   getTypingProgress: () => { current: number; total: number; correct: number; wrong: number };
@@ -265,6 +266,28 @@ export const useLearningStore = create<LearningState>((set, get) => ({
         isCorrect: false, // 오답 피드백 표시용
       });
     }
+  },
+
+  // 모름 버튼: 정답 공개하고 오답 처리
+  giveUpTyping: () => {
+    const { words, currentIndex, wordStartTime, typingAnswers } = get();
+    const currentWord = words[currentIndex];
+    if (!currentWord) return;
+
+    // 오답으로 기록
+    useStore.getState().updateWordProgress(currentWord.id, false);
+
+    const answer: SessionAnswer = {
+      wordId: currentWord.id,
+      knew: false,
+      timeSpentMs: Date.now() - (wordStartTime || Date.now()),
+    };
+
+    set({
+      typingAnswers: [...typingAnswers, answer],
+      isTypingRevealed: true,
+      isCorrect: false,
+    });
   },
 
   nextTypingWord: () => {
