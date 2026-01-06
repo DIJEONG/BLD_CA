@@ -16,7 +16,7 @@ import {
 import { extractTextFromImage } from '@/lib/ocr';
 import { extractTextFromPdf, hasSufficientText } from '@/lib/pdf';
 import { extractVocabularyWords } from '@/lib/wordExtractor';
-import { ChevronDown, ChevronRight, Link, FileText, ImageIcon, Languages } from 'lucide-react';
+import { ChevronDown, ChevronRight, Link, FileText, ImageIcon, Languages, X } from 'lucide-react';
 
 type ImportTab = 'url' | 'file' | 'image';
 
@@ -277,6 +277,11 @@ export default function WordSetEditor({
       updated[index] = { ...updated[index], korean };
       return updated;
     });
+  };
+
+  // 번역 목록에서 단어 제거
+  const handleRemoveFromTranslation = (index: number) => {
+    setWordsWithTranslation(prev => prev.filter((_, i) => i !== index));
   };
 
   // 개별 단어 자동 번역
@@ -1260,6 +1265,14 @@ export default function WordSetEditor({
                           >
                             {word.isTranslating ? '...' : '재번역'}
                           </button>
+                          <button
+                            className="p-1 text-muted-foreground hover:text-red-500 transition-colors shrink-0"
+                            onClick={() => handleRemoveFromTranslation(index)}
+                            disabled={word.isTranslating}
+                            title="삭제"
+                          >
+                            <X size={16} />
+                          </button>
                         </div>
                       </div>
                     );
@@ -1276,11 +1289,13 @@ export default function WordSetEditor({
                   <button
                     className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
                     onClick={handleFinalAddWords}
-                    disabled={isFinalAdding}
+                    disabled={isFinalAdding || wordsWithTranslation.length === 0}
                   >
                     {isFinalAdding
                       ? '추가 중...'
-                      : `${wordsWithTranslation.length}개 단어 추가`}
+                      : wordsWithTranslation.length === 0
+                        ? '단어 없음'
+                        : `${wordsWithTranslation.length}개 단어 추가`}
                   </button>
                 </div>
               </div>
