@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { Input } from '@/components/ui/input';
 import AddWordForm from './AddWordForm';
 import { translateToKorean } from '@/lib/translate';
 import { Word } from '@/types';
+import {
+  parseWordSetJSON,
+  findDuplicateWords,
+  ImportedWord,
+  JSON_TEMPLATE_SIMPLE,
+  JSON_TEMPLATE_FULL,
+} from '@/lib/jsonImport';
 
 interface WordSetEditorProps {
   wordSetId: string;
@@ -35,6 +42,15 @@ export default function WordSetEditor({
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
   const [isAddingWords, setIsAddingWords] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
+
+  // JSON 가져오기 관련 상태
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
+  const [jsonPreviewWords, setJsonPreviewWords] = useState<ImportedWord[]>([]);
+  const [jsonDuplicates, setJsonDuplicates] = useState<Set<string>>(new Set());
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [jsonWarnings, setJsonWarnings] = useState<string[]>([]);
+  const [showJsonHelp, setShowJsonHelp] = useState(false);
+  const [isAddingJsonWords, setIsAddingJsonWords] = useState(false);
 
   // Store에서 직접 단어장 조회 (실시간 업데이트)
   const customWordSets = useStore((state) => state.customWordSets);
@@ -196,6 +212,86 @@ export default function WordSetEditor({
     } finally {
       setIsAddingWords(false);
     }
+  };
+
+  // JSON 파일 처리
+  const handleJsonFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 이전 상태 초기화
+    setJsonError(null);
+    setJsonWarnings([]);
+    setJsonPreviewWords([]);
+    setJsonDuplicates(new Set());
+
+    const result = await parseWordSetJSON(file);
+
+    if (!result.success) {
+      setJsonError(result.error || '파일을 처리할 수 없습니다.');
+      return;
+    }
+
+    if (result.warnings) {
+      setJsonWarnings(result.warnings);
+    }
+
+    if (result.words) {
+      setJsonPreviewWords(result.words);
+      const duplicates = findDuplicateWords(result.words, wordSet.words);
+      setJsonDuplicates(duplicates);
+    }
+
+    // 파일 입력 초기화 (같은 파일 다시 선택 가능하도록)
+    if (jsonFileInputRef.current) {
+      jsonFileInputRef.current.value = '';
+    }
+  };
+
+  // JSON에서 단어 추가
+  const handleAddJsonWords = async () => {
+    if (jsonPreviewWords.length === 0) return;
+
+    setIsAddingJsonWords(true);
+
+    try {
+      // 중복 제외하고 추가
+      const wordsToAdd = jsonPreviewWords.filter(
+        (w) => !jsonDuplicates.has(w.english.toLowerCase())
+      );
+
+      for (const word of wordsToAdd) {
+        addWordToCustomSet(wordSet.id, {
+          english: word.english,
+          korean: word.korean,
+          pronunciation: word.pronunciation,
+          example: word.example,
+          exampleKorean: word.exampleKorean,
+        });
+      }
+
+      // 완료 후 초기화
+      setJsonPreviewWords([]);
+      setJsonDuplicates(new Set());
+      setJsonWarnings([]);
+    } catch (error) {
+      setJsonError('단어 추가 중 오류가 발생했습니다.');
+    } finally {
+      setIsAddingJsonWords(false);
+    }
+  };
+
+  // JSON 가져오기 취소
+  const handleCancelJsonImport = () => {
+    setJsonPreviewWords([]);
+    setJsonDuplicates(new Set());
+    setJsonError(null);
+    setJsonWarnings([]);
+  };
+
+  // 템플릿 복사
+  const copyTemplate = (template: string) => {
+    navigator.clipboard.writeText(template);
   };
 
   return (
@@ -373,6 +469,146 @@ export default function WordSetEditor({
                     {isAddingWords
                       ? '추가 중...'
                       : `선택한 ${selectedWords.size}개 단어 추가`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* JSON 파일로 가져오기 */}
+        <div className="mb-8">
+          <h2 className="section-title">JSON 파일로 가져오기</h2>
+          <div className="border-2 border-foreground">
+            {/* 파일 선택 */}
+            <div className="p-4">
+              <input
+                ref={jsonFileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleJsonFileChange}
+                className="hidden"
+              />
+              <button
+                className="w-full py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                onClick={() => jsonFileInputRef.current?.click()}
+              >
+                JSON 파일 선택
+              </button>
+              <button
+                className="flex items-center gap-1 text-xs text-muted-foreground mt-3 hover:text-foreground transition-colors"
+                onClick={() => setShowJsonHelp(!showJsonHelp)}
+              >
+                <span>{showJsonHelp ? '▼' : '▸'}</span>
+                JSON 형식 보기
+              </button>
+            </div>
+
+            {/* JSON 형식 도움말 */}
+            {showJsonHelp && (
+              <div className="border-t border-foreground p-4 bg-secondary">
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium uppercase tracking-wider">간단 형식</span>
+                      <button
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => copyTemplate(JSON_TEMPLATE_SIMPLE)}
+                      >
+                        복사
+                      </button>
+                    </div>
+                    <pre className="text-xs bg-background border border-foreground p-3 overflow-x-auto">
+                      {JSON_TEMPLATE_SIMPLE}
+                    </pre>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium uppercase tracking-wider">전체 형식</span>
+                      <button
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => copyTemplate(JSON_TEMPLATE_FULL)}
+                      >
+                        복사
+                      </button>
+                    </div>
+                    <pre className="text-xs bg-background border border-foreground p-3 overflow-x-auto">
+                      {JSON_TEMPLATE_FULL}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 에러 메시지 */}
+            {jsonError && (
+              <div className="border-t border-foreground p-4 bg-red-50 dark:bg-red-950">
+                <p className="text-sm text-red-600 dark:text-red-400">{jsonError}</p>
+              </div>
+            )}
+
+            {/* 경고 메시지 */}
+            {jsonWarnings.length > 0 && (
+              <div className="border-t border-foreground p-4 bg-amber-50 dark:bg-amber-950">
+                {jsonWarnings.map((warning, i) => (
+                  <p key={i} className="text-sm text-amber-600 dark:text-amber-400">{warning}</p>
+                ))}
+              </div>
+            )}
+
+            {/* 미리보기 */}
+            {jsonPreviewWords.length > 0 && (
+              <>
+                <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
+                  <span className="text-sm">
+                    {jsonPreviewWords.length}개 단어
+                    {jsonDuplicates.size > 0 && (
+                      <span className="text-muted-foreground"> · {jsonDuplicates.size}개 중복</span>
+                    )}
+                  </span>
+                </div>
+                <div className="border-t border-foreground max-h-[250px] overflow-y-auto">
+                  {jsonPreviewWords.map((word, index) => {
+                    const isDuplicate = jsonDuplicates.has(word.english.toLowerCase());
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm ${
+                          index > 0 ? 'border-t border-foreground' : ''
+                        } ${isDuplicate ? 'bg-muted text-muted-foreground' : ''}`}
+                      >
+                        {isDuplicate ? (
+                          <span className="text-amber-500">⚠</span>
+                        ) : (
+                          <span className="text-muted-foreground">○</span>
+                        )}
+                        <span className={isDuplicate ? 'line-through' : 'font-medium'}>
+                          {word.english}
+                        </span>
+                        <span className="text-muted-foreground">—</span>
+                        <span className={isDuplicate ? '' : ''}>{word.korean}</span>
+                        {isDuplicate && (
+                          <span className="text-xs text-amber-500 ml-auto">(이미 존재)</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="border-t border-foreground p-4 flex gap-2">
+                  <button
+                    className="flex-1 py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                    onClick={handleCancelJsonImport}
+                  >
+                    취소
+                  </button>
+                  <button
+                    className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
+                    onClick={handleAddJsonWords}
+                    disabled={isAddingJsonWords || jsonPreviewWords.length === jsonDuplicates.size}
+                  >
+                    {isAddingJsonWords
+                      ? '추가 중...'
+                      : `${jsonPreviewWords.length - jsonDuplicates.size}개 단어 가져오기`}
                   </button>
                 </div>
               </>
