@@ -582,27 +582,36 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         </header>
 
         <main className="max-w-2xl mx-auto px-4 py-6 sm:py-12">
-          <div className="border-2 border-black">
-            <div className="border-b border-black px-4 py-2">
-              <span className="text-xs uppercase tracking-wider text-gray-500">뜻</span>
-            </div>
-            <div className="p-4 sm:p-8 text-center">
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold">{currentWord.korean}</h2>
-            </div>
+          {/* 3D 플립 카드 */}
+          <div
+            className="flashcard-container h-[350px] sm:h-[400px]"
+            onClick={!isRevealed ? handleReveal : undefined}
+          >
+            <div className={`flashcard-inner ${isRevealed ? 'flipped' : ''}`}>
+              {/* 앞면: 한국어 뜻 */}
+              <div className="flashcard-front cursor-pointer hover:bg-gray-50 transition-colors">
+                <div className="border-b border-black px-4 py-2">
+                  <span className="text-xs uppercase tracking-wider text-gray-500">뜻</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+                  <h2 className="text-2xl sm:text-3xl font-serif font-bold text-center mb-8">
+                    {currentWord.korean}
+                  </h2>
+                  <div className="text-center">
+                    <p className="text-gray-400 uppercase tracking-wider mb-1 text-sm sm:text-base">
+                      Tap to flip
+                    </p>
+                    <p className="text-xs text-gray-300">SPACE / ENTER</p>
+                  </div>
+                </div>
+              </div>
 
-            <div
-              className={`min-h-[150px] sm:min-h-[200px] flex flex-col items-center justify-center border-t-2 border-black p-4 sm:p-8 ${
-                !isRevealed ? 'cursor-pointer hover:bg-gray-50' : ''
-              }`}
-              onClick={!isRevealed ? handleReveal : undefined}
-            >
-              {!isRevealed ? (
-                <>
-                  <p className="text-gray-400 uppercase tracking-wider mb-2 text-sm sm:text-base">Click to reveal</p>
-                  <p className="text-xs text-gray-300">SPACE / ENTER</p>
-                </>
-              ) : (
-                <>
+              {/* 뒷면: 영어 정답 + 버튼 */}
+              <div className="flashcard-back flex flex-col">
+                <div className="border-b border-black px-4 py-2">
+                  <span className="text-xs uppercase tracking-wider text-gray-500">정답</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
                   <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                     <p className="text-2xl sm:text-4xl font-serif font-bold">
                       {currentWord.english}
@@ -625,46 +634,52 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                       {currentWord.pronunciation}
                     </p>
                   )}
-                </>
-              )}
-            </div>
-
-            {isRevealed && (
-              <div className="grid grid-cols-3 border-t-2 border-black">
-                <button
-                  className="py-4 sm:py-6 border-r border-black transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm hover:text-white"
-                  style={{ backgroundColor: 'var(--accent-error-light)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error-light)'}
-                  onClick={() => handleMarkFlashcard(false)}
-                >
-                  <span className="hidden sm:inline">✕ </span>몰랐다
-                </button>
-                <button
-                  className="py-4 sm:py-6 border-r border-black transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
-                  style={{ backgroundColor: 'var(--accent-amber-light)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef3c7'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-amber-light)'}
-                  onClick={() => handleMarkFlashcard(true, 'unsure')}
-                >
-                  <span className="hidden sm:inline">△ </span>애매함
-                </button>
-                <button
-                  className="py-4 sm:py-6 transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm hover:text-white"
-                  style={{ backgroundColor: 'var(--accent-success-light)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-success)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-success-light)'}
-                  onClick={() => handleMarkFlashcard(true, 'sure')}
-                >
-                  <span className="hidden sm:inline">○ </span>확실함
-                </button>
+                </div>
+                <div className="grid grid-cols-3 border-t-2 border-black">
+                  <button
+                    className="py-4 sm:py-6 border-r border-black transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm hover:text-white"
+                    style={{ backgroundColor: 'var(--accent-error-light)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error-light)'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkFlashcard(false);
+                    }}
+                  >
+                    <span className="hidden sm:inline">✕ </span>몰랐다
+                  </button>
+                  <button
+                    className="py-4 sm:py-6 border-r border-black transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
+                    style={{ backgroundColor: 'var(--accent-amber-light)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef3c7'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-amber-light)'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkFlashcard(true, 'unsure');
+                    }}
+                  >
+                    <span className="hidden sm:inline">△ </span>애매함
+                  </button>
+                  <button
+                    className="py-4 sm:py-6 transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm hover:text-white"
+                    style={{ backgroundColor: 'var(--accent-success-light)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-success)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-success-light)'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkFlashcard(true, 'sure');
+                    }}
+                  >
+                    <span className="hidden sm:inline">○ </span>확실함
+                  </button>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider hidden sm:block">
             {!isRevealed
-              ? 'SPACE / ENTER: Reveal'
+              ? 'SPACE / ENTER: Flip'
               : '1/→: 확실함  |  2/↑: 애매함  |  3/←: 몰랐다'
             }
           </p>
