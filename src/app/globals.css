@@ -127,6 +127,17 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #ffffff;
   --sidebar-ring: #ffffff;
+
+  /* Dark mode accent colors - 어두운 배경에 맞는 색상 */
+  --accent-teal: #14b8a6;
+  --accent-teal-light: #042f2e;
+  --accent-teal-dark: #2dd4bf;
+  --accent-success: #22c55e;
+  --accent-success-light: #052e16;
+  --accent-error: #ef4444;
+  --accent-error-light: #450a0a;
+  --accent-amber: #f59e0b;
+  --accent-amber-light: #451a03;
 }
 
 @layer base {
