@@ -46,6 +46,7 @@ interface StoreActions {
   updateDailyStats: (session: LearningSession) => void;
   getTodayStats: () => DailyStats | undefined;
   getWeeklyStats: () => DailyStats[];
+  getMonthlyStats: (year: number, month: number) => Record<string, DailyStats>;
 
   // 스트릭
   updateStreak: () => void;
@@ -281,6 +282,23 @@ export const useStore = create<AppState & StoreActions>()(
         }
 
         return stats;
+      },
+
+      // 월별 통계 조회
+      getMonthlyStats: (year, month) => {
+        const dailyStats = get().dailyStats;
+        const result: Record<string, DailyStats> = {};
+
+        // 해당 월의 모든 날짜에 대해 통계 조회
+        const daysInMonth = new Date(year, month, 0).getDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          if (dailyStats[dateStr]) {
+            result[dateStr] = dailyStats[dateStr];
+          }
+        }
+
+        return result;
       },
 
       updateStreak: () => {

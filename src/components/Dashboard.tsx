@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { allWordSets, getWordSetsByGrade } from '@/data/words';
 import LearningPage from './learning/LearningPage';
 import WordSetEditor from './custom/WordSetEditor';
+import LearningCalendar from './LearningCalendar';
 import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
 
 export default function Dashboard() {
@@ -317,6 +318,11 @@ export default function Dashboard() {
               </div>
             );
           })()}
+        </div>
+
+        {/* 월별 달력 */}
+        <div className="mb-8">
+          <LearningCalendar />
         </div>
 
         {/* 단어장 목록 */}
