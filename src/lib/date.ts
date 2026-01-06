@@ -1,20 +1,17 @@
-// 캐나다 Eastern Time 기준 날짜 유틸리티
-const CANADA_TIMEZONE = 'America/Toronto';
+// 브라우저 로컬 시간 기준 날짜 유틸리티
 
-// 캐나다 시간대 기준 오늘 날짜 (YYYY-MM-DD)
+// 로컬 시간 기준 오늘 날짜 (YYYY-MM-DD)
 export function getTodayString(): string {
-  return new Date().toLocaleDateString('en-CA', {
-    timeZone: CANADA_TIMEZONE,
-  });
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-// 캐나다 시간대 기준 현재 Date 객체
+// 로컬 시간 기준 현재 Date 객체
 export function getCanadaDate(): Date {
-  const now = new Date();
-  const canadaDateStr = now.toLocaleString('en-US', {
-    timeZone: CANADA_TIMEZONE,
-  });
-  return new Date(canadaDateStr);
+  return new Date();
 }
 
 // 날짜 차이 계산 (일 단위)
