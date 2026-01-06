@@ -5,10 +5,11 @@ import { useStore } from '@/store/useStore';
 import { Input } from '@/components/ui/input';
 
 const gradeLevels = [
-  { value: 'elementary', label: '초등학생' },
-  { value: 'middle', label: '중학생' },
-  { value: 'high', label: '고등학생' },
-  { value: 'adult', label: '성인' },
+  { value: 'grade-k2', label: 'K-2', description: 'Kindergarten - Grade 2' },
+  { value: 'grade-3-5', label: '3-5', description: 'Grade 3 - 5' },
+  { value: 'grade-6-8', label: '6-8', description: 'Grade 6 - 8' },
+  { value: 'grade-9-12', label: '9-12', description: 'Grade 9 - 12' },
+  { value: 'adult', label: 'Adult', description: 'College & Beyond' },
 ];
 
 const dailyWordOptions = [10, 20, 30, 50];
@@ -80,20 +81,23 @@ export default function Onboarding() {
               <div className="space-y-4">
                 <div>
                   <label className="data-label block mb-2">Grade Level</label>
-                  <div className="grid grid-cols-2 gap-0">
+                  <div className="space-y-0">
                     {gradeLevels.map((level, index) => (
                       <button
                         key={level.value}
-                        className={`p-4 border-2 border-black font-medium transition-colors ${
-                          index % 2 === 1 ? 'border-l-0' : ''
-                        } ${index >= 2 ? 'border-t-0' : ''} ${
+                        className={`w-full p-3 border-2 border-black font-medium transition-colors text-left ${
+                          index > 0 ? 'border-t-0' : ''
+                        } ${
                           gradeLevel === level.value
                             ? 'bg-black text-white'
                             : 'bg-white text-black hover:bg-gray-100'
                         }`}
                         onClick={() => setGradeLevel(level.value)}
                       >
-                        {level.label}
+                        <span className="font-bold font-mono">{level.label}</span>
+                        <span className={`ml-2 text-sm ${gradeLevel === level.value ? 'text-gray-300' : 'text-gray-500'}`}>
+                          {level.description}
+                        </span>
                       </button>
                     ))}
                   </div>

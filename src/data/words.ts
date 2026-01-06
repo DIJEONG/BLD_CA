@@ -1,15 +1,15 @@
 import { WordSet } from '@/types';
 
 // ========================================
-// 초등학생용 단어장 (5개 카테고리)
+// Grade 3-5 단어장
 // ========================================
 
 // 1. 학교생활
 export const schoolLifeWords: WordSet = {
   id: 'school-life',
-  name: '학교생활',
-  description: '교실, 과목, 학용품 관련 단어',
-  gradeLevel: 'elementary',
+  name: 'School Life',
+  description: 'Classroom, subjects, school supplies',
+  gradeLevel: 'grade-3-5',
   words: [
     // 학교 장소
     { id: 'sc1', english: 'school', korean: '학교' },
@@ -58,12 +58,16 @@ export const schoolLifeWords: WordSet = {
   ],
 };
 
-// 2. 선생님과 대화
+// ========================================
+// Grade K-2 단어장
+// ========================================
+
+// 선생님과 대화
 export const talkingToTeacherWords: WordSet = {
   id: 'talking-to-teacher',
-  name: '선생님과 대화',
-  description: '질문하기, 도움 요청하기',
-  gradeLevel: 'elementary',
+  name: 'Talking to Teacher',
+  description: 'Basic classroom expressions',
+  gradeLevel: 'grade-k2',
   words: [
     // 기본 표현
     { id: 'tt1', english: 'teacher', korean: '선생님' },
@@ -112,12 +116,12 @@ export const talkingToTeacherWords: WordSet = {
   ],
 };
 
-// 3. 마트에서 쇼핑
+// 마트에서 쇼핑
 export const shoppingWords: WordSet = {
   id: 'shopping-at-store',
-  name: '마트에서 쇼핑',
-  description: '쇼핑할 때 쓰는 단어',
-  gradeLevel: 'elementary',
+  name: 'Shopping',
+  description: 'Shopping vocabulary',
+  gradeLevel: 'grade-3-5',
   words: [
     // 장소/물건
     { id: 'sh1', english: 'store', korean: '가게' },
@@ -171,7 +175,7 @@ export const gamingWords: WordSet = {
   id: 'gaming-with-friends',
   name: '게임 친구와 대화',
   description: '온라인 게임에서 쓰는 표현',
-  gradeLevel: 'elementary',
+  gradeLevel: 'grade-3-5',
   words: [
     // 게임 기본
     { id: 'gm1', english: 'game', korean: '게임' },
@@ -225,7 +229,7 @@ export const playingWithFriendsWords: WordSet = {
   id: 'playing-with-friends',
   name: '친구와 놀기',
   description: '친구랑 놀 때 쓰는 표현',
-  gradeLevel: 'elementary',
+  gradeLevel: 'grade-k2',
   words: [
     // 기본 인사/표현
     { id: 'pf1', english: 'Hi!', korean: '안녕!' },
@@ -274,12 +278,16 @@ export const playingWithFriendsWords: WordSet = {
   ],
 };
 
+// ========================================
+// Grade 6-8 단어장
+// ========================================
+
 // 중급 레벨 - 실용 생활 영어
 export const intermediateWords: WordSet = {
   id: 'intermediate-practical',
   name: '중급 실용 영어',
   description: '은행, 병원, 교통 등 실생활 영어',
-  gradeLevel: 'middle',
+  gradeLevel: 'grade-6-8',
   words: [
     // === 은행/금융 (1-80) ===
     { id: 'm1', english: 'account', korean: '계좌' },
@@ -693,12 +701,16 @@ export const intermediateWords: WordSet = {
   ],
 };
 
+// ========================================
+// Grade 9-12 단어장
+// ========================================
+
 // 고급 레벨 - 이민/비즈니스 영어
 export const advancedWords: WordSet = {
   id: 'advanced-immigration',
   name: '고급 이민/비즈니스 영어',
   description: '이민, 법률, 부동산, 비즈니스 영어',
-  gradeLevel: 'high',
+  gradeLevel: 'grade-9-12',
   words: [
     // === 이민/영주권 (1-100) ===
     { id: 'a1', english: 'immigration', korean: '이민' },
