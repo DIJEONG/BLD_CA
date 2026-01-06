@@ -19,6 +19,7 @@ import {
   SM2_DEFAULTS,
 } from '@/lib/sm2';
 import { getTodayString, getDaysDiff, getCanadaDate } from '@/lib/date';
+import { allWordSets } from '@/data/words';
 
 interface StoreActions {
   // 온보딩
@@ -179,10 +180,22 @@ export const useStore = create<AppState & StoreActions>()(
       },
 
       // 오답 단어 목록 (wrongCount > 0, 많이 틀린 순)
+      // 실제로 존재하는 단어만 반환 (삭제된 단어 제외)
       getWrongWords: () => {
         const allProgress = Object.values(get().wordProgress);
+        const builtInWordIds = new Set(
+          allWordSets.flatMap(ws => ws.words.map(w => w.id))
+        );
+        const customWordIds = new Set(
+          get().customWordSets.flatMap(ws => ws.words.map(w => w.id))
+        );
+
         return allProgress
-          .filter((p) => (p.wrongCount || 0) > 0)
+          .filter((p) => {
+            // wrongCount > 0 이고 실제로 존재하는 단어만
+            if ((p.wrongCount || 0) <= 0) return false;
+            return builtInWordIds.has(p.wordId) || customWordIds.has(p.wordId);
+          })
           .sort((a, b) => (b.wrongCount || 0) - (a.wrongCount || 0));
       },
 
