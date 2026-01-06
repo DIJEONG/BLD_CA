@@ -50,11 +50,11 @@ export const metadata: Metadata = {
   },
 };
 
-// 다크모드 플래시 방지 스크립트
+// 다크모드 플래시 방지 스크립트 (기본값: 라이트 모드)
 const themeScript = `
   (function() {
     const theme = localStorage.getItem('theme');
-    if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     }
   })();
