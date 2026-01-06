@@ -795,19 +795,31 @@ export default function WordSetEditor({
                     </div>
                     <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
-                        {extractedWords.map((word, index) => (
-                          <button
-                            key={word}
-                            className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
-                              ${selectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
-                              ${index % 3 === 2 ? 'sm:border-r-0' : ''}
-                              ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
-                            `}
-                            onClick={() => toggleWordSelection(word)}
-                          >
-                            {word}
-                          </button>
-                        ))}
+                        {extractedWords.map((word, index) => {
+                          const isSelected = selectedWords.has(word);
+                          return (
+                            <button
+                              key={word}
+                              className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground flex items-center gap-1
+                                ${isSelected ? 'bg-teal-50 dark:bg-teal-950/30' : 'hover:bg-secondary'}
+                                ${index % 3 === 2 ? 'sm:border-r-0' : ''}
+                                ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
+                              `}
+                              onClick={() => toggleWordSelection(word)}
+                            >
+                              <span className={`w-4 h-4 flex items-center justify-center rounded border text-[10px] shrink-0 ${
+                                isSelected
+                                  ? 'bg-teal-500 border-teal-500 text-white'
+                                  : 'border-muted-foreground'
+                              }`}>
+                                {isSelected && '✓'}
+                              </span>
+                              <span className={isSelected ? 'text-teal-700 dark:text-teal-300' : ''}>
+                                {word}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     <div className="border-t border-foreground p-4">
@@ -1001,19 +1013,31 @@ export default function WordSetEditor({
                     </div>
                     <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
-                        {pdfExtractedWords.map((word, index) => (
-                          <button
-                            key={word}
-                            className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
-                              ${pdfSelectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
-                              ${index % 3 === 2 ? 'sm:border-r-0' : ''}
-                              ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
-                            `}
-                            onClick={() => togglePdfWordSelection(word)}
-                          >
-                            {word}
-                          </button>
-                        ))}
+                        {pdfExtractedWords.map((word, index) => {
+                          const isSelected = pdfSelectedWords.has(word);
+                          return (
+                            <button
+                              key={word}
+                              className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground flex items-center gap-1
+                                ${isSelected ? 'bg-teal-50 dark:bg-teal-950/30' : 'hover:bg-secondary'}
+                                ${index % 3 === 2 ? 'sm:border-r-0' : ''}
+                                ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
+                              `}
+                              onClick={() => togglePdfWordSelection(word)}
+                            >
+                              <span className={`w-4 h-4 flex items-center justify-center rounded border text-[10px] shrink-0 ${
+                                isSelected
+                                  ? 'bg-teal-500 border-teal-500 text-white'
+                                  : 'border-muted-foreground'
+                              }`}>
+                                {isSelected && '✓'}
+                              </span>
+                              <span className={isSelected ? 'text-teal-700 dark:text-teal-300' : ''}>
+                                {word}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     <div className="border-t border-foreground p-4 flex gap-2">
@@ -1103,19 +1127,31 @@ export default function WordSetEditor({
                     </div>
                     <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
-                        {ocrExtractedWords.map((word, index) => (
-                          <button
-                            key={word}
-                            className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
-                              ${ocrSelectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
-                              ${index % 3 === 2 ? 'sm:border-r-0' : ''}
-                              ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
-                            `}
-                            onClick={() => toggleOcrWordSelection(word)}
-                          >
-                            {word}
-                          </button>
-                        ))}
+                        {ocrExtractedWords.map((word, index) => {
+                          const isSelected = ocrSelectedWords.has(word);
+                          return (
+                            <button
+                              key={word}
+                              className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground flex items-center gap-1
+                                ${isSelected ? 'bg-teal-50 dark:bg-teal-950/30' : 'hover:bg-secondary'}
+                                ${index % 3 === 2 ? 'sm:border-r-0' : ''}
+                                ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
+                              `}
+                              onClick={() => toggleOcrWordSelection(word)}
+                            >
+                              <span className={`w-4 h-4 flex items-center justify-center rounded border text-[10px] shrink-0 ${
+                                isSelected
+                                  ? 'bg-teal-500 border-teal-500 text-white'
+                                  : 'border-muted-foreground'
+                              }`}>
+                                {isSelected && '✓'}
+                              </span>
+                              <span className={isSelected ? 'text-teal-700 dark:text-teal-300' : ''}>
+                                {word}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     <div className="border-t border-foreground p-4 flex gap-2">
