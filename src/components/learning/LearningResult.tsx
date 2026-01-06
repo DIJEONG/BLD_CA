@@ -1,10 +1,6 @@
 'use client';
 
 import { useLearningStore } from '@/store/useLearningStore';
-import { getWordSetById } from '@/data/words';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Clock, Target, CheckCircle, XCircle, Home, RotateCcw } from 'lucide-react';
 
 interface LearningResultProps {
   onFinish: () => void;
@@ -19,7 +15,7 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
   const accuracy = typingAnswers.length > 0 ? Math.round((correctCount / typingAnswers.length) * 100) : 0;
   const avgTimePerWord = typingAnswers.length > 0 ? Math.round(totalTime / typingAnswers.length) : 0;
 
-  // 틀린 단어 목록 (오답)
+  // 틀린 단어 목록
   const wrongAnswers = typingAnswers
     .filter((a) => !a.knew)
     .map((a) => {
@@ -30,14 +26,10 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    if (mins > 0) {
-      return `${mins}분 ${secs}초`;
-    }
-    return `${secs}초`;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleRetry = () => {
-    // 같은 단어장으로 다시 시작
     const currentWords = [...words];
     resetSession();
     startSession(currentWords, '');
@@ -50,116 +42,111 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
 
   // 성과 메시지
   const getMessage = () => {
-    if (accuracy === 100) return { emoji: '🎉', text: '완벽해요!' };
-    if (accuracy >= 90) return { emoji: '🌟', text: '훌륭해요!' };
-    if (accuracy >= 70) return { emoji: '👍', text: '잘했어요!' };
-    if (accuracy >= 50) return { emoji: '💪', text: '조금만 더!' };
-    return { emoji: '📚', text: '복습이 필요해요' };
+    if (accuracy === 100) return 'PERFECT';
+    if (accuracy >= 90) return 'EXCELLENT';
+    if (accuracy >= 70) return 'GOOD JOB';
+    if (accuracy >= 50) return 'KEEP GOING';
+    return 'NEEDS REVIEW';
   };
 
-  const message = getMessage();
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <main className="max-w-2xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-white">
+      {/* 헤더 */}
+      <header className="border-b-2 border-black">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <p className="text-sm uppercase tracking-wider text-center">Session Complete</p>
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 py-12">
         {/* 결과 헤더 */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">{message.emoji}</div>
-          <h1 className="text-2xl font-bold mb-2">학습 완료!</h1>
-          <p className="text-lg text-muted-foreground">{message.text}</p>
+        <div className="text-center mb-12">
+          <p className="text-sm uppercase tracking-wider text-gray-500 mb-4">Result</p>
+          <h1 className="text-5xl font-serif font-bold mb-4">{getMessage()}</h1>
+          <p className="font-mono text-xl">{accuracy}%</p>
         </div>
 
-        {/* 통계 카드 */}
-        <Card className="mb-6">
-          <CardContent className="py-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <Target className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm text-muted-foreground">정답률</span>
-                </div>
-                <div className="text-3xl font-bold">{accuracy}%</div>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <Clock className="w-5 h-5 text-purple-600" />
-                  <span className="text-sm text-muted-foreground">소요 시간</span>
-                </div>
-                <div className="text-3xl font-bold">{formatTime(totalTime)}</div>
-              </div>
-            </div>
+        {/* 통계 그리드 */}
+        <div className="grid grid-cols-4 gap-0 border-2 border-black mb-8">
+          <div className="p-4 border-r border-black text-center">
+            <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Total</p>
+            <p className="text-2xl font-mono font-bold">{typingAnswers.length}</p>
+          </div>
+          <div className="p-4 border-r border-black text-center">
+            <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Correct</p>
+            <p className="text-2xl font-mono font-bold">{correctCount}</p>
+          </div>
+          <div className="p-4 border-r border-black text-center">
+            <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Wrong</p>
+            <p className="text-2xl font-mono font-bold">{wrongCount}</p>
+          </div>
+          <div className="p-4 text-center">
+            <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Time</p>
+            <p className="text-2xl font-mono font-bold">{formatTime(totalTime)}</p>
+          </div>
+        </div>
 
-            <div className="border-t mt-6 pt-6 grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
-                  <Trophy className="w-4 h-4" />
-                  <span className="text-xs">총 문제</span>
-                </div>
-                <div className="text-xl font-bold">{typingAnswers.length}개</div>
-              </div>
-              <div>
-                <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-xs">정답</span>
-                </div>
-                <div className="text-xl font-bold text-green-600">{correctCount}개</div>
-              </div>
-              <div>
-                <div className="flex items-center justify-center gap-1 text-red-500 mb-1">
-                  <XCircle className="w-4 h-4" />
-                  <span className="text-xs">오답</span>
-                </div>
-                <div className="text-xl font-bold text-red-500">{wrongCount}개</div>
-              </div>
+        {/* 추가 통계 */}
+        <div className="border-2 border-black mb-8">
+          <div className="grid grid-cols-2 divide-x divide-black">
+            <div className="p-6 text-center">
+              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Accuracy</p>
+              <p className="text-4xl font-mono font-bold">{accuracy}%</p>
             </div>
-
-            <div className="border-t mt-6 pt-4 text-center text-sm text-muted-foreground">
-              단어당 평균 {avgTimePerWord}초
+            <div className="p-6 text-center">
+              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Avg per Word</p>
+              <p className="text-4xl font-mono font-bold">{avgTimePerWord}s</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* 틀린 단어 */}
         {wrongAnswers.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-red-500" />
-                틀린 단어 ({wrongAnswers.length}개)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {wrongAnswers.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-3 bg-red-50 rounded-lg"
-                  >
-                    <div>
-                      <div className="font-bold">{item.word?.english}</div>
-                      <div className="text-sm text-muted-foreground">{item.word?.korean}</div>
-                    </div>
-                    <div className="text-sm text-red-500">
-                      복습 필요
-                    </div>
+          <div className="border-2 border-black mb-8">
+            <div className="border-b border-black px-4 py-2">
+              <span className="text-sm uppercase tracking-wider">
+                Wrong Words ({wrongAnswers.length})
+              </span>
+            </div>
+            <div className="max-h-[250px] overflow-y-auto">
+              {wrongAnswers.map((item, index) => (
+                <div
+                  key={index}
+                  className={`flex justify-between items-center px-4 py-3 ${
+                    index > 0 ? 'border-t border-black' : ''
+                  }`}
+                >
+                  <div>
+                    <span className="font-semibold">{item.word?.english}</span>
+                    <span className="text-gray-400 mx-2">—</span>
+                    <span className="text-gray-600">{item.word?.korean}</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <span className="tag text-xs">REVIEW</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* 버튼 */}
-        <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 h-12" onClick={handleRetry}>
-            <RotateCcw className="w-4 h-4 mr-2" />
-            다시 학습
-          </Button>
-          <Button className="flex-1 h-12" onClick={handleHome}>
-            <Home className="w-4 h-4 mr-2" />
-            홈으로
-          </Button>
+        <div className="grid grid-cols-2 gap-0 border-2 border-black">
+          <button
+            className="py-4 border-r border-black uppercase tracking-wider font-semibold hover:bg-gray-100 transition-colors"
+            onClick={handleRetry}
+          >
+            Retry
+          </button>
+          <button
+            className="py-4 bg-black text-white uppercase tracking-wider font-semibold hover:bg-white hover:text-black transition-colors"
+            onClick={handleHome}
+          >
+            Home
+          </button>
         </div>
+
+        <p className="text-center text-xs text-gray-400 mt-6 uppercase tracking-wider">
+          Session completed successfully
+        </p>
       </main>
     </div>
   );

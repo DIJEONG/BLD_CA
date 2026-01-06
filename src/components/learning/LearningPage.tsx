@@ -572,10 +572,12 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             {/* 최종 정답/오답 공개 */}
             {isTypingRevealed && (
               <div className={`border-t-2 border-black p-6 text-center ${
-                isCorrect ? 'bg-white' : 'bg-gray-50'
+                isCorrect ? 'bg-green-50' : 'bg-red-50'
               }`}>
-                <p className="text-xs uppercase tracking-wider mb-2">
-                  {isCorrect ? '○ CORRECT' : '✕ WRONG'}
+                <p className={`text-2xl font-bold mb-3 ${
+                  isCorrect ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {isCorrect ? '정답!' : '오답'}
                 </p>
                 <p className="text-3xl font-serif font-bold">{currentWord.english}</p>
               </div>
