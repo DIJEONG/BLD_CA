@@ -9,6 +9,7 @@ import LearningPage from './learning/LearningPage';
 import WordSetEditor from './custom/WordSetEditor';
 import LearningCalendar from './LearningCalendar';
 import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
+import { getCanadaDate, getTodayString } from '@/lib/date';
 
 export default function Dashboard() {
   const [isLearning, setIsLearning] = useState(false);
@@ -124,7 +125,7 @@ export default function Dashboard() {
     );
   }
 
-  const today = new Date();
+  const today = getCanadaDate();
   const dateStr = today.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -276,7 +277,7 @@ export default function Dashboard() {
                       ? Math.max((stat.wordsStudied / dailyGoal) * 100, 10)
                       : 0;
                     const day = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][new Date(stat.date).getDay()];
-                    const isToday = stat.date === new Date().toISOString().split('T')[0];
+                    const isToday = stat.date === getTodayString();
 
                     return (
                       <div

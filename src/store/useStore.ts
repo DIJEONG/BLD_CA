@@ -18,7 +18,7 @@ import {
   efToLeitnerBox,
   SM2_DEFAULTS,
 } from '@/lib/sm2';
-import { getTodayString, getDaysDiff } from '@/lib/date';
+import { getTodayString, getDaysDiff, getCanadaDate } from '@/lib/date';
 
 interface StoreActions {
   // 온보딩
@@ -252,12 +252,13 @@ export const useStore = create<AppState & StoreActions>()(
 
       getWeeklyStats: () => {
         const stats: DailyStats[] = [];
-        const today = new Date();
+        const today = getCanadaDate();
 
         for (let i = 6; i >= 0; i--) {
           const date = new Date(today);
           date.setDate(date.getDate() - i);
-          const dateStr = date.toISOString().split('T')[0];
+          // 캐나다 시간대 기준 날짜 문자열
+          const dateStr = date.toLocaleDateString('en-CA');
 
           stats.push(
             get().dailyStats[dateStr] || {

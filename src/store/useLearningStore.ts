@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { Word, SessionAnswer, LearningSession, Confidence } from '@/types';
 import { useStore } from './useStore';
+import { getTodayString } from '@/lib/date';
 
 // 플래시카드 답변 (1단계)
 interface FlashcardAnswer {
@@ -346,7 +347,7 @@ export const useLearningStore = create<LearningState>((set, get) => ({
 
     const session: LearningSession = {
       id: `session-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayString(),
       wordSetId: currentWordSetId,
       totalWords: words.length,
       correctCount,
