@@ -228,8 +228,8 @@ export const useLearningStore = create<LearningState>((set, get) => ({
 
     const MAX_ATTEMPTS = 4;
 
-    if (isCorrect) {
-      // 정답: Leitner 진도 업데이트 후 다음으로
+    if (isCorrect && attemptCount === 1) {
+      // 첫 번째 시도에서 정답: 정답으로 기록
       useStore.getState().updateWordProgress(currentWord.id, true);
 
       const answer: SessionAnswer = {
@@ -242,6 +242,21 @@ export const useLearningStore = create<LearningState>((set, get) => ({
         typingAnswers: [...typingAnswers, answer],
         isTypingRevealed: true,
         isCorrect: true,
+      });
+    } else if (isCorrect && attemptCount > 1) {
+      // 2번째 이후 시도에서 정답: 힌트 도움 받았으므로 오답 처리
+      useStore.getState().updateWordProgress(currentWord.id, false);
+
+      const answer: SessionAnswer = {
+        wordId: currentWord.id,
+        knew: false, // 힌트 도움 받았으므로 오답
+        timeSpentMs: Date.now() - (wordStartTime || Date.now()),
+      };
+
+      set({
+        typingAnswers: [...typingAnswers, answer],
+        isTypingRevealed: true,
+        isCorrect: true, // UI에서는 정답으로 표시
       });
     } else if (attemptCount >= MAX_ATTEMPTS) {
       // 4회차 오답: 정답 공개, 오답으로 기록
