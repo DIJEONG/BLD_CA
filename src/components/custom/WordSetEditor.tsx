@@ -13,7 +13,9 @@ import {
   JSON_TEMPLATE_SIMPLE,
   JSON_TEMPLATE_FULL,
 } from '@/lib/jsonImport';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { extractTextFromImage } from '@/lib/ocr';
+import { extractVocabularyWords } from '@/lib/wordExtractor';
+import { ChevronDown, ChevronRight, ImageIcon } from 'lucide-react';
 
 interface WordSetEditorProps {
   wordSetId: string;
@@ -52,6 +54,15 @@ export default function WordSetEditor({
   const [jsonWarnings, setJsonWarnings] = useState<string[]>([]);
   const [showJsonHelp, setShowJsonHelp] = useState(false);
   const [isAddingJsonWords, setIsAddingJsonWords] = useState(false);
+
+  // 이미지 OCR 관련 상태
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrExtractedWords, setOcrExtractedWords] = useState<string[]>([]);
+  const [ocrSelectedWords, setOcrSelectedWords] = useState<Set<string>>(new Set());
+  const [isAddingOcrWords, setIsAddingOcrWords] = useState(false);
 
   // Store에서 직접 단어장 조회 (실시간 업데이트)
   const customWordSets = useStore((state) => state.customWordSets);
@@ -293,6 +304,110 @@ export default function WordSetEditor({
   // 템플릿 복사
   const copyTemplate = (template: string) => {
     navigator.clipboard.writeText(template);
+  };
+
+  // 이미지에서 단어 추출 (OCR)
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 이미지 타입 검증
+    if (!file.type.startsWith('image/')) {
+      setOcrError('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    setIsOcrProcessing(true);
+    setOcrProgress(0);
+    setOcrError(null);
+    setOcrExtractedWords([]);
+    setOcrSelectedWords(new Set());
+
+    try {
+      // OCR 텍스트 추출
+      const text = await extractTextFromImage(file, setOcrProgress);
+
+      // 영어 단어 추출
+      const words = extractVocabularyWords(text);
+
+      // 이미 단어장에 있는 단어 제외
+      const existingWords = new Set(wordSet?.words.map(w => w.english.toLowerCase()) || []);
+      const newWords = words.filter(w => !existingWords.has(w.toLowerCase()));
+
+      if (newWords.length === 0) {
+        setOcrError('새로 추가할 단어가 없습니다. (추출된 단어가 없거나 이미 있는 단어들입니다)');
+      } else {
+        setOcrExtractedWords(newWords);
+        setOcrSelectedWords(new Set(newWords));
+      }
+    } catch (error) {
+      setOcrError('이미지에서 텍스트를 추출할 수 없습니다.');
+    } finally {
+      setIsOcrProcessing(false);
+      // 파일 입력 초기화 (같은 파일 재선택 가능)
+      if (imageFileInputRef.current) {
+        imageFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // OCR 단어 선택 토글
+  const toggleOcrWordSelection = (word: string) => {
+    const newSelected = new Set(ocrSelectedWords);
+    if (newSelected.has(word)) {
+      newSelected.delete(word);
+    } else {
+      newSelected.add(word);
+    }
+    setOcrSelectedWords(newSelected);
+  };
+
+  // OCR 전체 선택/해제
+  const toggleOcrSelectAll = () => {
+    if (ocrSelectedWords.size === ocrExtractedWords.length) {
+      setOcrSelectedWords(new Set());
+    } else {
+      setOcrSelectedWords(new Set(ocrExtractedWords));
+    }
+  };
+
+  // OCR 선택한 단어들 추가
+  const handleAddOcrSelectedWords = async () => {
+    if (ocrSelectedWords.size === 0) return;
+
+    setIsAddingOcrWords(true);
+
+    try {
+      const wordsToAdd = Array.from(ocrSelectedWords);
+
+      for (const english of wordsToAdd) {
+        // 번역 시도
+        const result = await translateToKorean(english);
+        const korean = result.success && result.translation
+          ? result.translation
+          : '(번역 필요)';
+
+        addWordToCustomSet(wordSet!.id, {
+          english,
+          korean,
+        });
+      }
+
+      // 추가 완료 후 초기화
+      setOcrExtractedWords([]);
+      setOcrSelectedWords(new Set());
+    } catch (error) {
+      setOcrError('단어 추가 중 오류가 발생했습니다.');
+    } finally {
+      setIsAddingOcrWords(false);
+    }
+  };
+
+  // OCR 취소
+  const handleCancelOcrImport = () => {
+    setOcrExtractedWords([]);
+    setOcrSelectedWords(new Set());
+    setOcrError(null);
   };
 
   return (
@@ -610,6 +725,112 @@ export default function WordSetEditor({
                     {isAddingJsonWords
                       ? '추가 중...'
                       : `${jsonPreviewWords.length - jsonDuplicates.size}개 단어 가져오기`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 이미지에서 단어 추출 (OCR) */}
+        <div className="mb-8">
+          <h2 className="section-title">이미지에서 단어 추출</h2>
+          <div className="border-2 border-foreground">
+            {/* 파일 선택 */}
+            <div className="p-4">
+              <input
+                ref={imageFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <button
+                className="w-full py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                onClick={() => imageFileInputRef.current?.click()}
+                disabled={isOcrProcessing}
+              >
+                <ImageIcon size={18} />
+                {isOcrProcessing ? '처리 중...' : '이미지 선택'}
+              </button>
+              <p className="text-xs text-muted-foreground mt-2">
+                책, 문서, 스크린샷 등의 이미지에서 영어 단어를 추출합니다
+              </p>
+            </div>
+
+            {/* 진행률 표시 */}
+            {isOcrProcessing && (
+              <div className="border-t border-foreground p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-secondary border border-foreground overflow-hidden">
+                    <div
+                      className="h-full bg-foreground transition-all duration-300"
+                      style={{ width: `${Math.round(ocrProgress * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-mono w-12">
+                    {Math.round(ocrProgress * 100)}%
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  처음 사용 시 언어 모델 다운로드로 시간이 더 걸릴 수 있습니다
+                </p>
+              </div>
+            )}
+
+            {/* 오류 메시지 */}
+            {ocrError && (
+              <div className="border-t border-foreground p-4 bg-red-50 dark:bg-red-950">
+                <p className="text-sm text-red-600 dark:text-red-400">{ocrError}</p>
+              </div>
+            )}
+
+            {/* 추출된 단어 목록 */}
+            {ocrExtractedWords.length > 0 && (
+              <>
+                <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
+                  <span className="text-sm">
+                    {ocrExtractedWords.length}개 단어 발견 · {ocrSelectedWords.size}개 선택
+                  </span>
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                    onClick={toggleOcrSelectAll}
+                  >
+                    {ocrSelectedWords.size === ocrExtractedWords.length ? '전체 해제' : '전체 선택'}
+                  </button>
+                </div>
+                <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
+                    {ocrExtractedWords.map((word, index) => (
+                      <button
+                        key={word}
+                        className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
+                          ${ocrSelectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
+                          ${index % 3 === 2 ? 'sm:border-r-0' : ''}
+                          ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
+                        `}
+                        onClick={() => toggleOcrWordSelection(word)}
+                      >
+                        {word}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="border-t border-foreground p-4 flex gap-2">
+                  <button
+                    className="flex-1 py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                    onClick={handleCancelOcrImport}
+                  >
+                    취소
+                  </button>
+                  <button
+                    className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
+                    onClick={handleAddOcrSelectedWords}
+                    disabled={ocrSelectedWords.size === 0 || isAddingOcrWords}
+                  >
+                    {isAddingOcrWords
+                      ? '추가 중...'
+                      : `선택한 ${ocrSelectedWords.size}개 단어 추가`}
                   </button>
                 </div>
               </>
