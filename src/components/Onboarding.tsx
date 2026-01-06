@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { Input } from '@/components/ui/input';
+import GuidePage from './GuidePage';
 
 const gradeLevels = [
   { value: 'grade-k2', label: 'K-2', description: 'Kindergarten - Grade 2' },
@@ -19,6 +20,7 @@ export default function Onboarding() {
   const [nickname, setNickname] = useState('');
   const [gradeLevel, setGradeLevel] = useState('');
   const [dailyWordCount, setDailyWordCount] = useState(20);
+  const [showGuide, setShowGuide] = useState(false);
   const setProfile = useStore((state) => state.setProfile);
 
   const handleComplete = () => {
@@ -29,6 +31,11 @@ export default function Onboarding() {
       createdAt: new Date().toISOString(),
     });
   };
+
+  // 가이드 화면
+  if (showGuide) {
+    return <GuidePage onBack={() => setShowGuide(false)} />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-white">
@@ -175,9 +182,17 @@ export default function Onboarding() {
         </div>
 
         {/* 푸터 */}
-        <p className="text-center text-xs text-gray-400 mt-6 uppercase tracking-wider">
-          A Minimalist Vocabulary Learning App
-        </p>
+        <div className="text-center mt-6">
+          <button
+            className="tag-teal hover:opacity-80 transition-opacity text-xs"
+            onClick={() => setShowGuide(true)}
+          >
+            GUIDE
+          </button>
+          <p className="text-xs text-gray-400 mt-3 uppercase tracking-wider">
+            A Minimalist Vocabulary Learning App
+          </p>
+        </div>
       </div>
     </div>
   );
