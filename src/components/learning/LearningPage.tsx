@@ -317,7 +317,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                 </button>
               )}
             </div>
-            <div className="max-h-[300px] sm:max-h-[350px] overflow-y-auto">
+            <div>
               {previewWords.map((word, index) => {
                 const isReview = reviewWordIds.has(word.id);
                 return (
