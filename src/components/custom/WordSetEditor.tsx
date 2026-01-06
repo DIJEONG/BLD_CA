@@ -699,16 +699,6 @@ export default function WordSetEditor({
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8">
-        {/* 학습 시작 버튼 */}
-        {wordSet.words.length > 0 && (
-          <button
-            className="w-full border-2 border-foreground bg-foreground text-background py-4 mb-8 font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors"
-            onClick={() => onStartLearning(wordSet.id)}
-          >
-            START LEARNING →
-          </button>
-        )}
-
         {/* 단어 추출/가져오기 통합 탭 */}
         <div className="mb-8">
           <h2 className="section-title">단어 추출 / 가져오기</h2>
@@ -1371,6 +1361,16 @@ export default function WordSetEditor({
                 </div>
               ))}
             </div>
+          )}
+
+          {/* 학습 시작 버튼 - 단어 목록 하단 */}
+          {wordSet.words.length > 0 && (
+            <button
+              className="w-full border-2 border-foreground bg-foreground text-background py-4 mt-6 font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors"
+              onClick={() => onStartLearning(wordSet.id)}
+            >
+              START LEARNING →
+            </button>
           )}
         </div>
       </main>
