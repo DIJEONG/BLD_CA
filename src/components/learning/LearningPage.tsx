@@ -83,6 +83,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     typingAnswers,
     startSession,
     revealAnswer,
+    toggleFlip,
     markFlashcard,
     isFlashcardComplete,
     getFlashcardProgress,
@@ -246,11 +247,10 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     setPhase('typing');
   };
 
-  const handleReveal = useCallback(() => {
-    if (!isRevealed) {
-      revealAnswer();
-    }
-  }, [isRevealed, revealAnswer]);
+  // 플립 토글 (한글 ↔ 영어 반복)
+  const handleFlip = useCallback(() => {
+    toggleFlip();
+  }, [toggleFlip]);
 
   const handleMarkFlashcard = useCallback((knew: boolean, confidence: Confidence = 'sure') => {
     markFlashcard(knew, confidence);
@@ -278,13 +278,13 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (phase === 'flashcard') {
-      if (e.key === ' ' || e.key === 'Enter') {
+      // SPACE: 플립 토글 (한글 ↔ 영어)
+      if (e.key === ' ') {
         e.preventDefault();
-        if (!isRevealed) {
-          handleReveal();
-        }
-      } else if (isRevealed) {
-        // 1: 확실히 알았다, 2: 애매하게 알았다, 3: 몰랐다
+        handleFlip();
+      }
+      // 숫자키/방향키: 평가 버튼 (영어 면에서만)
+      if (isRevealed) {
         if (e.key === '1' || e.key === 'ArrowRight') {
           handleMarkFlashcard(true, 'sure');
         } else if (e.key === '2' || e.key === 'ArrowUp') {
@@ -305,7 +305,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         giveUpTyping();
       }
     }
-  }, [phase, isRevealed, handleReveal, handleMarkFlashcard, isTypingRevealed, handleNextTyping, giveUpTyping]);
+  }, [phase, isRevealed, handleFlip, handleMarkFlashcard, isTypingRevealed, handleNextTyping, giveUpTyping]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -583,13 +583,13 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
         <main className="max-w-2xl mx-auto px-4 py-6 sm:py-12">
           {/* 3D 플립 카드 */}
-          <div
-            className="flashcard-container h-[350px] sm:h-[400px]"
-            onClick={!isRevealed ? handleReveal : undefined}
-          >
+          <div className="flashcard-container h-[350px] sm:h-[400px]">
             <div className={`flashcard-inner ${isRevealed ? 'flipped' : ''}`}>
               {/* 앞면: 한국어 뜻 */}
-              <div className="flashcard-front cursor-pointer hover:bg-gray-50 transition-colors">
+              <div
+                className="flashcard-front cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={handleFlip}
+              >
                 <div className="border-b border-black px-4 py-2">
                   <span className="text-xs uppercase tracking-wider text-gray-500">뜻</span>
                 </div>
@@ -601,7 +601,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                     <p className="text-gray-400 uppercase tracking-wider mb-1 text-sm sm:text-base">
                       Tap to flip
                     </p>
-                    <p className="text-xs text-gray-300">SPACE / ENTER</p>
+                    <p className="text-xs text-gray-300">SPACE</p>
                   </div>
                 </div>
               </div>
@@ -611,7 +611,10 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                 <div className="border-b border-black px-4 py-2">
                   <span className="text-xs uppercase tracking-wider text-gray-500">정답</span>
                 </div>
-                <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+                <div
+                  className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={handleFlip}
+                >
                   <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                     <p className="text-2xl sm:text-4xl font-serif font-bold">
                       {currentWord.english}
@@ -634,6 +637,9 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                       {currentWord.pronunciation}
                     </p>
                   )}
+                  <p className="text-gray-300 text-xs mt-4 uppercase tracking-wider">
+                    Tap to flip back
+                  </p>
                 </div>
                 <div className="grid grid-cols-3 border-t-2 border-black">
                   <button
@@ -679,8 +685,8 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
           <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider hidden sm:block">
             {!isRevealed
-              ? 'SPACE / ENTER: Flip'
-              : '1/→: 확실함  |  2/↑: 애매함  |  3/←: 몰랐다'
+              ? 'SPACE: Flip'
+              : 'SPACE: Flip  |  1/→: 확실함  |  2/↑: 애매함  |  3/←: 몰랐다'
             }
           </p>
         </main>

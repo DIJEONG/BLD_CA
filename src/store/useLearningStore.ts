@@ -43,6 +43,7 @@ interface LearningState {
 
   // 액션 - 1단계 플래시카드
   revealAnswer: () => void;
+  toggleFlip: () => void;
   markFlashcard: (knew: boolean, confidence?: Confidence) => void;
   isFlashcardComplete: () => boolean;
   getFlashcardProgress: () => { current: number; total: number; knew: number; didntKnow: number };
@@ -145,6 +146,11 @@ export const useLearningStore = create<LearningState>((set, get) => ({
   // === 1단계: 플래시카드 ===
   revealAnswer: () => {
     set({ isRevealed: true });
+  },
+
+  // 플립 토글 (한글 ↔ 영어 반복)
+  toggleFlip: () => {
+    set((state) => ({ isRevealed: !state.isRevealed }));
   },
 
   markFlashcard: (knew, confidence = 'sure') => {
