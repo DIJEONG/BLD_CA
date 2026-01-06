@@ -591,7 +591,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
         <main className="max-w-2xl mx-auto px-4 py-6 sm:py-12">
           {/* 3D 플립 카드 */}
-          <div className="flashcard-container h-[350px] sm:h-[400px]">
+          <div className="flashcard-container h-[350px] sm:h-[400px]" key={currentIndex}>
             <div className={`flashcard-inner ${isRevealed ? 'flipped' : ''}`}>
               {/* 앞면: 한국어 뜻 */}
               <div
