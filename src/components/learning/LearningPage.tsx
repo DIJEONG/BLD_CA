@@ -239,8 +239,13 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         e.preventDefault();
         handleNextTyping();
       }
+      // ESC: 모름 (포기)
+      if (e.key === 'Escape' && !isTypingRevealed) {
+        e.preventDefault();
+        giveUpTyping();
+      }
     }
-  }, [phase, isRevealed, handleReveal, handleMarkFlashcard, isTypingRevealed, handleNextTyping]);
+  }, [phase, isRevealed, handleReveal, handleMarkFlashcard, isTypingRevealed, handleNextTyping, giveUpTyping]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -754,9 +759,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
           <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider">
             {!isTypingRevealed
-              ? attemptCount === 1
-                ? 'Press ENTER to check'
-                : `${(hintInfo?.maxAttempts || 4) - attemptCount + 1} attempts left`
+              ? 'ENTER: 확인  |  ESC: 모름'
               : 'Press ENTER to continue'
             }
           </p>
