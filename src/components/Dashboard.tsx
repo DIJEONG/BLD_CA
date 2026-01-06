@@ -172,7 +172,7 @@ export default function Dashboard() {
             </div>
             <div className="flex gap-2">
               <button
-                className="tag hover:bg-black hover:text-white transition-colors"
+                className="tag-teal hover:opacity-80 transition-opacity"
                 onClick={() => setShowGuide(true)}
               >
                 GUIDE
