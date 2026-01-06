@@ -14,8 +14,11 @@ import {
   JSON_TEMPLATE_FULL,
 } from '@/lib/jsonImport';
 import { extractTextFromImage } from '@/lib/ocr';
+import { extractTextFromPdf, hasSufficientText } from '@/lib/pdf';
 import { extractVocabularyWords } from '@/lib/wordExtractor';
-import { ChevronDown, ChevronRight, ImageIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, Link, FileText, ImageIcon } from 'lucide-react';
+
+type ImportTab = 'url' | 'file' | 'image';
 
 interface WordSetEditorProps {
   wordSetId: string;
@@ -38,6 +41,9 @@ export default function WordSetEditor({
   const [isEditingName, setIsEditingName] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // 탭 상태
+  const [importTab, setImportTab] = useState<ImportTab>('url');
+
   // URL 추출 관련 상태
   const [urlInput, setUrlInput] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
@@ -46,14 +52,23 @@ export default function WordSetEditor({
   const [isAddingWords, setIsAddingWords] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
 
-  // JSON 가져오기 관련 상태
-  const jsonFileInputRef = useRef<HTMLInputElement>(null);
+  // 파일 가져오기 관련 상태 (JSON + PDF)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileType, setFileType] = useState<'json' | 'pdf' | null>(null);
+  const [isFileProcessing, setIsFileProcessing] = useState(false);
+  const [fileProgress, setFileProgress] = useState(0);
+  // JSON 관련
   const [jsonPreviewWords, setJsonPreviewWords] = useState<ImportedWord[]>([]);
   const [jsonDuplicates, setJsonDuplicates] = useState<Set<string>>(new Set());
-  const [jsonError, setJsonError] = useState<string | null>(null);
-  const [jsonWarnings, setJsonWarnings] = useState<string[]>([]);
   const [showJsonHelp, setShowJsonHelp] = useState(false);
   const [isAddingJsonWords, setIsAddingJsonWords] = useState(false);
+  // PDF 관련 (단어 추출 결과)
+  const [pdfExtractedWords, setPdfExtractedWords] = useState<string[]>([]);
+  const [pdfSelectedWords, setPdfSelectedWords] = useState<Set<string>>(new Set());
+  const [isAddingPdfWords, setIsAddingPdfWords] = useState(false);
+  // 공통
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [fileWarnings, setFileWarnings] = useState<string[]>([]);
 
   // 이미지 OCR 관련 상태
   const imageFileInputRef = useRef<HTMLInputElement>(null);
@@ -226,37 +241,84 @@ export default function WordSetEditor({
     }
   };
 
-  // JSON 파일 처리
-  const handleJsonFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 파일 처리 (JSON + PDF)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // 이전 상태 초기화
-    setJsonError(null);
-    setJsonWarnings([]);
-    setJsonPreviewWords([]);
-    setJsonDuplicates(new Set());
+    resetFileState();
 
+    const extension = file.name.split('.').pop()?.toLowerCase();
+
+    if (extension === 'json') {
+      setFileType('json');
+      await handleJsonFile(file);
+    } else if (extension === 'pdf') {
+      setFileType('pdf');
+      await handlePdfFile(file);
+    } else {
+      setFileError('JSON 또는 PDF 파일만 지원합니다.');
+    }
+
+    // 파일 입력 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // JSON 파일 처리
+  const handleJsonFile = async (file: File) => {
     const result = await parseWordSetJSON(file);
 
     if (!result.success) {
-      setJsonError(result.error || '파일을 처리할 수 없습니다.');
+      setFileError(result.error || '파일을 처리할 수 없습니다.');
       return;
     }
 
     if (result.warnings) {
-      setJsonWarnings(result.warnings);
+      setFileWarnings(result.warnings);
     }
 
     if (result.words) {
       setJsonPreviewWords(result.words);
-      const duplicates = findDuplicateWords(result.words, wordSet.words);
+      const duplicates = findDuplicateWords(result.words, wordSet?.words || []);
       setJsonDuplicates(duplicates);
     }
+  };
 
-    // 파일 입력 초기화 (같은 파일 다시 선택 가능하도록)
-    if (jsonFileInputRef.current) {
-      jsonFileInputRef.current.value = '';
+  // PDF 파일 처리
+  const handlePdfFile = async (file: File) => {
+    setIsFileProcessing(true);
+    setFileProgress(0);
+
+    try {
+      // PDF에서 텍스트 추출
+      const text = await extractTextFromPdf(file, setFileProgress);
+
+      // 텍스트가 충분한지 확인
+      if (!hasSufficientText(text)) {
+        setFileError('PDF에서 텍스트를 추출할 수 없습니다. 스캔된 PDF는 이미지 탭에서 OCR로 처리해주세요.');
+        return;
+      }
+
+      // 영어 단어 추출
+      const words = extractVocabularyWords(text);
+
+      // 이미 단어장에 있는 단어 제외
+      const existingWords = new Set(wordSet?.words.map(w => w.english.toLowerCase()) || []);
+      const newWords = words.filter(w => !existingWords.has(w.toLowerCase()));
+
+      if (newWords.length === 0) {
+        setFileError('새로 추가할 단어가 없습니다. (추출된 단어가 없거나 이미 있는 단어들입니다)');
+      } else {
+        setPdfExtractedWords(newWords);
+        setPdfSelectedWords(new Set(newWords));
+      }
+    } catch (error) {
+      setFileError('PDF 파일을 처리할 수 없습니다.');
+    } finally {
+      setIsFileProcessing(false);
     }
   };
 
@@ -267,13 +329,12 @@ export default function WordSetEditor({
     setIsAddingJsonWords(true);
 
     try {
-      // 중복 제외하고 추가
       const wordsToAdd = jsonPreviewWords.filter(
         (w) => !jsonDuplicates.has(w.english.toLowerCase())
       );
 
       for (const word of wordsToAdd) {
-        addWordToCustomSet(wordSet.id, {
+        addWordToCustomSet(wordSet!.id, {
           english: word.english,
           korean: word.korean,
           pronunciation: word.pronunciation,
@@ -282,23 +343,73 @@ export default function WordSetEditor({
         });
       }
 
-      // 완료 후 초기화
-      setJsonPreviewWords([]);
-      setJsonDuplicates(new Set());
-      setJsonWarnings([]);
+      resetFileState();
     } catch (error) {
-      setJsonError('단어 추가 중 오류가 발생했습니다.');
+      setFileError('단어 추가 중 오류가 발생했습니다.');
     } finally {
       setIsAddingJsonWords(false);
     }
   };
 
-  // JSON 가져오기 취소
-  const handleCancelJsonImport = () => {
+  // PDF 단어 선택 토글
+  const togglePdfWordSelection = (word: string) => {
+    const newSelected = new Set(pdfSelectedWords);
+    if (newSelected.has(word)) {
+      newSelected.delete(word);
+    } else {
+      newSelected.add(word);
+    }
+    setPdfSelectedWords(newSelected);
+  };
+
+  // PDF 전체 선택/해제
+  const togglePdfSelectAll = () => {
+    if (pdfSelectedWords.size === pdfExtractedWords.length) {
+      setPdfSelectedWords(new Set());
+    } else {
+      setPdfSelectedWords(new Set(pdfExtractedWords));
+    }
+  };
+
+  // PDF에서 단어 추가
+  const handleAddPdfWords = async () => {
+    if (pdfSelectedWords.size === 0) return;
+
+    setIsAddingPdfWords(true);
+
+    try {
+      const wordsToAdd = Array.from(pdfSelectedWords);
+
+      for (const english of wordsToAdd) {
+        const result = await translateToKorean(english);
+        const korean = result.success && result.translation
+          ? result.translation
+          : '(번역 필요)';
+
+        addWordToCustomSet(wordSet!.id, {
+          english,
+          korean,
+        });
+      }
+
+      resetFileState();
+    } catch (error) {
+      setFileError('단어 추가 중 오류가 발생했습니다.');
+    } finally {
+      setIsAddingPdfWords(false);
+    }
+  };
+
+  // 파일 상태 초기화
+  const resetFileState = () => {
+    setFileType(null);
+    setFileError(null);
+    setFileWarnings([]);
+    setFileProgress(0);
     setJsonPreviewWords([]);
     setJsonDuplicates(new Set());
-    setJsonError(null);
-    setJsonWarnings([]);
+    setPdfExtractedWords([]);
+    setPdfSelectedWords(new Set());
   };
 
   // 템플릿 복사
@@ -510,329 +621,443 @@ export default function WordSetEditor({
           </button>
         )}
 
-        {/* URL에서 단어 추출 */}
+        {/* 단어 추출/가져오기 통합 탭 */}
         <div className="mb-8">
-          <h2 className="section-title">URL에서 단어 추출</h2>
+          <h2 className="section-title">단어 추출 / 가져오기</h2>
           <div className="border-2 border-foreground">
-            <div className="p-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="https://example.com/article"
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  className="flex-1 border-2 border-foreground"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleExtractWords();
-                  }}
-                />
-                <button
-                  className="tag-filled hover:bg-background hover:text-foreground transition-colors px-4"
-                  onClick={handleExtractWords}
-                  disabled={isExtracting || !urlInput.trim()}
-                >
-                  {isExtracting ? '추출 중...' : '추출'}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                뉴스, 블로그 등 영어 페이지 URL을 입력하세요
-              </p>
+            {/* 탭 네비게이션 */}
+            <div className="flex border-b border-foreground">
+              <button
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                  importTab === 'url'
+                    ? 'bg-foreground text-background'
+                    : 'hover:bg-secondary'
+                }`}
+                onClick={() => setImportTab('url')}
+              >
+                <Link size={16} />
+                URL
+              </button>
+              <button
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-l border-foreground transition-colors ${
+                  importTab === 'file'
+                    ? 'bg-foreground text-background'
+                    : 'hover:bg-secondary'
+                }`}
+                onClick={() => setImportTab('file')}
+              >
+                <FileText size={16} />
+                파일
+              </button>
+              <button
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-l border-foreground transition-colors ${
+                  importTab === 'image'
+                    ? 'bg-foreground text-background'
+                    : 'hover:bg-secondary'
+                }`}
+                onClick={() => setImportTab('image')}
+              >
+                <ImageIcon size={16} />
+                이미지
+              </button>
             </div>
 
-            {/* 오류 메시지 */}
-            {extractError && (
-              <div className="border-t border-foreground p-4 bg-red-50 dark:bg-red-950">
-                <p className="text-sm text-red-600 dark:text-red-400">{extractError}</p>
-              </div>
-            )}
-
-            {/* 추출된 단어 목록 */}
-            {extractedWords.length > 0 && (
+            {/* URL 탭 */}
+            {importTab === 'url' && (
               <>
-                <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
-                  <span className="text-sm">
-                    {extractedWords.length}개 단어 발견 · {selectedWords.size}개 선택
-                  </span>
-                  <button
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                    onClick={toggleSelectAll}
-                  >
-                    {selectedWords.size === extractedWords.length ? '전체 해제' : '전체 선택'}
-                  </button>
-                </div>
-                <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
-                    {extractedWords.map((word, index) => (
-                      <button
-                        key={word}
-                        className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
-                          ${selectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
-                          ${index % 3 === 2 ? 'sm:border-r-0' : ''}
-                          ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
-                        `}
-                        onClick={() => toggleWordSelection(word)}
-                      >
-                        {word}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="border-t border-foreground p-4">
-                  <button
-                    className="w-full py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors disabled:opacity-50"
-                    onClick={handleAddSelectedWords}
-                    disabled={selectedWords.size === 0 || isAddingWords}
-                  >
-                    {isAddingWords
-                      ? '추가 중...'
-                      : `선택한 ${selectedWords.size}개 단어 추가`}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* JSON 파일로 가져오기 */}
-        <div className="mb-8">
-          <h2 className="section-title">JSON 파일로 가져오기</h2>
-          <div className="border-2 border-foreground">
-            {/* 파일 선택 */}
-            <div className="p-4">
-              <input
-                ref={jsonFileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleJsonFileChange}
-                className="hidden"
-              />
-              <button
-                className="w-full py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
-                onClick={() => jsonFileInputRef.current?.click()}
-              >
-                JSON 파일 선택
-              </button>
-              <button
-                className="flex items-center gap-1 text-xs text-muted-foreground mt-3 hover:text-foreground transition-colors"
-                onClick={() => setShowJsonHelp(!showJsonHelp)}
-              >
-                {showJsonHelp ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                JSON 형식 보기
-              </button>
-            </div>
-
-            {/* JSON 형식 도움말 */}
-            {showJsonHelp && (
-              <div className="border-t border-foreground p-4 bg-secondary">
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium uppercase tracking-wider">간단 형식</span>
-                      <button
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() => copyTemplate(JSON_TEMPLATE_SIMPLE)}
-                      >
-                        복사
-                      </button>
-                    </div>
-                    <pre className="text-xs bg-background border border-foreground p-3 overflow-x-auto">
-                      {JSON_TEMPLATE_SIMPLE}
-                    </pre>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium uppercase tracking-wider">전체 형식</span>
-                      <button
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() => copyTemplate(JSON_TEMPLATE_FULL)}
-                      >
-                        복사
-                      </button>
-                    </div>
-                    <pre className="text-xs bg-background border border-foreground p-3 overflow-x-auto">
-                      {JSON_TEMPLATE_FULL}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 에러 메시지 */}
-            {jsonError && (
-              <div className="border-t border-foreground p-4 bg-red-50 dark:bg-red-950">
-                <p className="text-sm text-red-600 dark:text-red-400">{jsonError}</p>
-              </div>
-            )}
-
-            {/* 경고 메시지 */}
-            {jsonWarnings.length > 0 && (
-              <div className="border-t border-foreground p-4 bg-amber-50 dark:bg-amber-950">
-                {jsonWarnings.map((warning, i) => (
-                  <p key={i} className="text-sm text-amber-600 dark:text-amber-400">{warning}</p>
-                ))}
-              </div>
-            )}
-
-            {/* 미리보기 */}
-            {jsonPreviewWords.length > 0 && (
-              <>
-                <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
-                  <span className="text-sm">
-                    {jsonPreviewWords.length}개 단어
-                    {jsonDuplicates.size > 0 && (
-                      <span className="text-muted-foreground"> · {jsonDuplicates.size}개 중복</span>
-                    )}
-                  </span>
-                </div>
-                <div className="border-t border-foreground max-h-[250px] overflow-y-auto">
-                  {jsonPreviewWords.map((word, index) => {
-                    const isDuplicate = jsonDuplicates.has(word.english.toLowerCase());
-                    return (
-                      <div
-                        key={index}
-                        className={`flex items-center gap-2 px-4 py-2 text-sm ${
-                          index > 0 ? 'border-t border-foreground' : ''
-                        } ${isDuplicate ? 'bg-muted text-muted-foreground' : ''}`}
-                      >
-                        {isDuplicate ? (
-                          <span className="text-amber-500">⚠</span>
-                        ) : (
-                          <span className="text-muted-foreground">○</span>
-                        )}
-                        <span className={isDuplicate ? 'line-through' : 'font-medium'}>
-                          {word.english}
-                        </span>
-                        <span className="text-muted-foreground">—</span>
-                        <span className={isDuplicate ? '' : ''}>{word.korean}</span>
-                        {isDuplicate && (
-                          <span className="text-xs text-amber-500 ml-auto">(이미 존재)</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="border-t border-foreground p-4 flex gap-2">
-                  <button
-                    className="flex-1 py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
-                    onClick={handleCancelJsonImport}
-                  >
-                    취소
-                  </button>
-                  <button
-                    className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
-                    onClick={handleAddJsonWords}
-                    disabled={isAddingJsonWords || jsonPreviewWords.length === jsonDuplicates.size}
-                  >
-                    {isAddingJsonWords
-                      ? '추가 중...'
-                      : `${jsonPreviewWords.length - jsonDuplicates.size}개 단어 가져오기`}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 이미지에서 단어 추출 (OCR) */}
-        <div className="mb-8">
-          <h2 className="section-title">이미지에서 단어 추출</h2>
-          <div className="border-2 border-foreground">
-            {/* 파일 선택 */}
-            <div className="p-4">
-              <input
-                ref={imageFileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <button
-                className="w-full py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                onClick={() => imageFileInputRef.current?.click()}
-                disabled={isOcrProcessing}
-              >
-                <ImageIcon size={18} />
-                {isOcrProcessing ? '처리 중...' : '이미지 선택'}
-              </button>
-              <p className="text-xs text-muted-foreground mt-2">
-                책, 문서, 스크린샷 등의 이미지에서 영어 단어를 추출합니다
-              </p>
-            </div>
-
-            {/* 진행률 표시 */}
-            {isOcrProcessing && (
-              <div className="border-t border-foreground p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-secondary border border-foreground overflow-hidden">
-                    <div
-                      className="h-full bg-foreground transition-all duration-300"
-                      style={{ width: `${Math.round(ocrProgress * 100)}%` }}
+                <div className="p-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="https://example.com/article"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      className="flex-1 border-2 border-foreground"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleExtractWords();
+                      }}
                     />
+                    <button
+                      className="tag-filled hover:bg-background hover:text-foreground transition-colors px-4"
+                      onClick={handleExtractWords}
+                      disabled={isExtracting || !urlInput.trim()}
+                    >
+                      {isExtracting ? '추출 중...' : '추출'}
+                    </button>
                   </div>
-                  <span className="text-sm font-mono w-12">
-                    {Math.round(ocrProgress * 100)}%
-                  </span>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    뉴스, 블로그 등 영어 페이지 URL을 입력하세요
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  처음 사용 시 언어 모델 다운로드로 시간이 더 걸릴 수 있습니다
-                </p>
-              </div>
+
+                {/* 오류 메시지 */}
+                {extractError && (
+                  <div className="border-t border-foreground p-4 bg-red-50 dark:bg-red-950">
+                    <p className="text-sm text-red-600 dark:text-red-400">{extractError}</p>
+                  </div>
+                )}
+
+                {/* 추출된 단어 목록 */}
+                {extractedWords.length > 0 && (
+                  <>
+                    <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
+                      <span className="text-sm">
+                        {extractedWords.length}개 단어 발견 · {selectedWords.size}개 선택
+                      </span>
+                      <button
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                        onClick={toggleSelectAll}
+                      >
+                        {selectedWords.size === extractedWords.length ? '전체 해제' : '전체 선택'}
+                      </button>
+                    </div>
+                    <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
+                        {extractedWords.map((word, index) => (
+                          <button
+                            key={word}
+                            className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
+                              ${selectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
+                              ${index % 3 === 2 ? 'sm:border-r-0' : ''}
+                              ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
+                            `}
+                            onClick={() => toggleWordSelection(word)}
+                          >
+                            {word}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="border-t border-foreground p-4">
+                      <button
+                        className="w-full py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors disabled:opacity-50"
+                        onClick={handleAddSelectedWords}
+                        disabled={selectedWords.size === 0 || isAddingWords}
+                      >
+                        {isAddingWords
+                          ? '추가 중...'
+                          : `선택한 ${selectedWords.size}개 단어 추가`}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
             )}
 
-            {/* 오류 메시지 */}
-            {ocrError && (
-              <div className="border-t border-foreground p-4 bg-red-50 dark:bg-red-950">
-                <p className="text-sm text-red-600 dark:text-red-400">{ocrError}</p>
-              </div>
-            )}
-
-            {/* 추출된 단어 목록 */}
-            {ocrExtractedWords.length > 0 && (
+            {/* 파일 탭 (JSON + PDF) */}
+            {importTab === 'file' && (
               <>
-                <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
-                  <span className="text-sm">
-                    {ocrExtractedWords.length}개 단어 발견 · {ocrSelectedWords.size}개 선택
-                  </span>
+                <div className="p-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,.pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
                   <button
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                    onClick={toggleOcrSelectAll}
+                    className="w-full py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isFileProcessing}
                   >
-                    {ocrSelectedWords.size === ocrExtractedWords.length ? '전체 해제' : '전체 선택'}
+                    <FileText size={18} />
+                    {isFileProcessing ? '처리 중...' : '파일 선택'}
+                  </button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    JSON 파일 (단어장 데이터) 또는 PDF 파일 (단어 추출)
+                  </p>
+                  <button
+                    className="flex items-center gap-1 text-xs text-muted-foreground mt-3 hover:text-foreground transition-colors"
+                    onClick={() => setShowJsonHelp(!showJsonHelp)}
+                  >
+                    {showJsonHelp ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    JSON 형식 보기
                   </button>
                 </div>
-                <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
-                    {ocrExtractedWords.map((word, index) => (
-                      <button
-                        key={word}
-                        className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
-                          ${ocrSelectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
-                          ${index % 3 === 2 ? 'sm:border-r-0' : ''}
-                          ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
-                        `}
-                        onClick={() => toggleOcrWordSelection(word)}
-                      >
-                        {word}
-                      </button>
+
+                {/* JSON 형식 도움말 */}
+                {showJsonHelp && (
+                  <div className="border-t border-foreground p-4 bg-secondary">
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium uppercase tracking-wider">간단 형식</span>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => copyTemplate(JSON_TEMPLATE_SIMPLE)}
+                          >
+                            복사
+                          </button>
+                        </div>
+                        <pre className="text-xs bg-background border border-foreground p-3 overflow-x-auto">
+                          {JSON_TEMPLATE_SIMPLE}
+                        </pre>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium uppercase tracking-wider">전체 형식</span>
+                          <button
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => copyTemplate(JSON_TEMPLATE_FULL)}
+                          >
+                            복사
+                          </button>
+                        </div>
+                        <pre className="text-xs bg-background border border-foreground p-3 overflow-x-auto">
+                          {JSON_TEMPLATE_FULL}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 파일 처리 진행률 */}
+                {isFileProcessing && fileType === 'pdf' && (
+                  <div className="border-t border-foreground p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 bg-secondary border border-foreground overflow-hidden">
+                        <div
+                          className="h-full bg-foreground transition-all duration-300"
+                          style={{ width: `${Math.round(fileProgress * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-mono w-12">
+                        {Math.round(fileProgress * 100)}%
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      PDF에서 텍스트를 추출하는 중...
+                    </p>
+                  </div>
+                )}
+
+                {/* 에러 메시지 */}
+                {fileError && (
+                  <div className="border-t border-foreground p-4 bg-red-50 dark:bg-red-950">
+                    <p className="text-sm text-red-600 dark:text-red-400">{fileError}</p>
+                  </div>
+                )}
+
+                {/* 경고 메시지 */}
+                {fileWarnings.length > 0 && (
+                  <div className="border-t border-foreground p-4 bg-amber-50 dark:bg-amber-950">
+                    {fileWarnings.map((warning, i) => (
+                      <p key={i} className="text-sm text-amber-600 dark:text-amber-400">{warning}</p>
                     ))}
                   </div>
-                </div>
-                <div className="border-t border-foreground p-4 flex gap-2">
+                )}
+
+                {/* JSON 미리보기 */}
+                {fileType === 'json' && jsonPreviewWords.length > 0 && (
+                  <>
+                    <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
+                      <span className="text-sm">
+                        {jsonPreviewWords.length}개 단어
+                        {jsonDuplicates.size > 0 && (
+                          <span className="text-muted-foreground"> · {jsonDuplicates.size}개 중복</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="border-t border-foreground max-h-[250px] overflow-y-auto">
+                      {jsonPreviewWords.map((word, index) => {
+                        const isDuplicate = jsonDuplicates.has(word.english.toLowerCase());
+                        return (
+                          <div
+                            key={index}
+                            className={`flex items-center gap-2 px-4 py-2 text-sm ${
+                              index > 0 ? 'border-t border-foreground' : ''
+                            } ${isDuplicate ? 'bg-muted text-muted-foreground' : ''}`}
+                          >
+                            {isDuplicate ? (
+                              <span className="text-amber-500">!</span>
+                            ) : (
+                              <span className="text-muted-foreground">○</span>
+                            )}
+                            <span className={isDuplicate ? 'line-through' : 'font-medium'}>
+                              {word.english}
+                            </span>
+                            <span className="text-muted-foreground">—</span>
+                            <span>{word.korean}</span>
+                            {isDuplicate && (
+                              <span className="text-xs text-amber-500 ml-auto">(이미 존재)</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="border-t border-foreground p-4 flex gap-2">
+                      <button
+                        className="flex-1 py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                        onClick={resetFileState}
+                      >
+                        취소
+                      </button>
+                      <button
+                        className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
+                        onClick={handleAddJsonWords}
+                        disabled={isAddingJsonWords || jsonPreviewWords.length === jsonDuplicates.size}
+                      >
+                        {isAddingJsonWords
+                          ? '추가 중...'
+                          : `${jsonPreviewWords.length - jsonDuplicates.size}개 단어 가져오기`}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* PDF 추출 결과 */}
+                {fileType === 'pdf' && pdfExtractedWords.length > 0 && (
+                  <>
+                    <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
+                      <span className="text-sm">
+                        {pdfExtractedWords.length}개 단어 발견 · {pdfSelectedWords.size}개 선택
+                      </span>
+                      <button
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                        onClick={togglePdfSelectAll}
+                      >
+                        {pdfSelectedWords.size === pdfExtractedWords.length ? '전체 해제' : '전체 선택'}
+                      </button>
+                    </div>
+                    <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
+                        {pdfExtractedWords.map((word, index) => (
+                          <button
+                            key={word}
+                            className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
+                              ${pdfSelectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
+                              ${index % 3 === 2 ? 'sm:border-r-0' : ''}
+                              ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
+                            `}
+                            onClick={() => togglePdfWordSelection(word)}
+                          >
+                            {word}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="border-t border-foreground p-4 flex gap-2">
+                      <button
+                        className="flex-1 py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                        onClick={resetFileState}
+                      >
+                        취소
+                      </button>
+                      <button
+                        className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
+                        onClick={handleAddPdfWords}
+                        disabled={pdfSelectedWords.size === 0 || isAddingPdfWords}
+                      >
+                        {isAddingPdfWords
+                          ? '추가 중...'
+                          : `선택한 ${pdfSelectedWords.size}개 단어 추가`}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* 이미지 탭 (OCR) */}
+            {importTab === 'image' && (
+              <>
+                <div className="p-4">
+                  <input
+                    ref={imageFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
                   <button
-                    className="flex-1 py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
-                    onClick={handleCancelOcrImport}
+                    className="w-full py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    onClick={() => imageFileInputRef.current?.click()}
+                    disabled={isOcrProcessing}
                   >
-                    취소
+                    <ImageIcon size={18} />
+                    {isOcrProcessing ? '처리 중...' : '이미지 선택'}
                   </button>
-                  <button
-                    className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
-                    onClick={handleAddOcrSelectedWords}
-                    disabled={ocrSelectedWords.size === 0 || isAddingOcrWords}
-                  >
-                    {isAddingOcrWords
-                      ? '추가 중...'
-                      : `선택한 ${ocrSelectedWords.size}개 단어 추가`}
-                  </button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    책, 문서, 스크린샷 등의 이미지에서 영어 단어를 추출합니다
+                  </p>
                 </div>
+
+                {/* 진행률 표시 */}
+                {isOcrProcessing && (
+                  <div className="border-t border-foreground p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-2 bg-secondary border border-foreground overflow-hidden">
+                        <div
+                          className="h-full bg-foreground transition-all duration-300"
+                          style={{ width: `${Math.round(ocrProgress * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-mono w-12">
+                        {Math.round(ocrProgress * 100)}%
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      처음 사용 시 언어 모델 다운로드로 시간이 더 걸릴 수 있습니다
+                    </p>
+                  </div>
+                )}
+
+                {/* 오류 메시지 */}
+                {ocrError && (
+                  <div className="border-t border-foreground p-4 bg-red-50 dark:bg-red-950">
+                    <p className="text-sm text-red-600 dark:text-red-400">{ocrError}</p>
+                  </div>
+                )}
+
+                {/* 추출된 단어 목록 */}
+                {ocrExtractedWords.length > 0 && (
+                  <>
+                    <div className="border-t border-foreground p-3 flex justify-between items-center bg-secondary">
+                      <span className="text-sm">
+                        {ocrExtractedWords.length}개 단어 발견 · {ocrSelectedWords.size}개 선택
+                      </span>
+                      <button
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                        onClick={toggleOcrSelectAll}
+                      >
+                        {ocrSelectedWords.size === ocrExtractedWords.length ? '전체 해제' : '전체 선택'}
+                      </button>
+                    </div>
+                    <div className="border-t border-foreground max-h-[200px] overflow-y-auto">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-0">
+                        {ocrExtractedWords.map((word, index) => (
+                          <button
+                            key={word}
+                            className={`p-2 text-xs sm:text-sm text-left border-b border-r border-foreground
+                              ${ocrSelectedWords.has(word) ? 'bg-foreground text-background' : 'hover:bg-secondary'}
+                              ${index % 3 === 2 ? 'sm:border-r-0' : ''}
+                              ${index % 2 === 1 ? 'border-r-0 sm:border-r' : ''}
+                            `}
+                            onClick={() => toggleOcrWordSelection(word)}
+                          >
+                            {word}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="border-t border-foreground p-4 flex gap-2">
+                      <button
+                        className="flex-1 py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                        onClick={handleCancelOcrImport}
+                      >
+                        취소
+                      </button>
+                      <button
+                        className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
+                        onClick={handleAddOcrSelectedWords}
+                        disabled={ocrSelectedWords.size === 0 || isAddingOcrWords}
+                      >
+                        {isAddingOcrWords
+                          ? '추가 중...'
+                          : `선택한 ${ocrSelectedWords.size}개 단어 추가`}
+                      </button>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
