@@ -12,6 +12,7 @@ import GuidePage from './GuidePage';
 import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
 import { getCanadaDate, getTodayString } from '@/lib/date';
 import { Word } from '@/types';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function Dashboard() {
   const [isLearning, setIsLearning] = useState(false);
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [dateStr, setDateStr] = useState<string | null>(null);
   const [todayString, setTodayString] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { theme, toggleTheme } = useTheme();
 
   // 클라이언트에서만 날짜 설정 (브라우저 로컬 시간 사용)
   useEffect(() => {
@@ -172,13 +174,20 @@ export default function Dashboard() {
             </div>
             <div className="flex gap-2">
               <button
+                className="tag hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                onClick={toggleTheme}
+                title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+              <button
                 className="tag-teal hover:opacity-80 transition-opacity"
                 onClick={() => setShowGuide(true)}
               >
                 GUIDE
               </button>
               <button
-                className="tag hover:bg-black hover:text-white transition-colors"
+                className="tag hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                 onClick={() => {
                   if (confirm('모든 데이터를 초기화할까요?')) {
                     resetAll();

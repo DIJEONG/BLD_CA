@@ -167,28 +167,47 @@
 @layer components {
   /* 에디토리얼 스타일 버튼 */
   .btn-editorial {
-    @apply border-2 border-black bg-white text-black px-4 py-2;
-    @apply hover:bg-black hover:text-white;
+    @apply border-2 px-4 py-2;
     @apply transition-colors duration-200;
     @apply font-medium tracking-wide;
+    border-color: var(--foreground);
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  .btn-editorial:hover {
+    background-color: var(--foreground);
+    color: var(--background);
   }
 
   .btn-editorial-filled {
-    @apply border-2 border-black bg-black text-white px-4 py-2;
-    @apply hover:bg-white hover:text-black;
+    @apply border-2 px-4 py-2;
     @apply transition-colors duration-200;
     @apply font-medium tracking-wide;
+    border-color: var(--foreground);
+    background-color: var(--foreground);
+    color: var(--background);
+  }
+
+  .btn-editorial-filled:hover {
+    background-color: var(--background);
+    color: var(--foreground);
   }
 
   /* 태그/뱃지 스타일 */
   .tag {
-    @apply inline-block border border-black px-2 py-0.5;
+    @apply inline-block px-2 py-0.5;
     @apply text-xs font-medium uppercase tracking-wider;
+    border: 1px solid var(--foreground);
+    color: var(--foreground);
   }
 
   .tag-filled {
-    @apply inline-block border border-black bg-black text-white px-2 py-0.5;
+    @apply inline-block px-2 py-0.5;
     @apply text-xs font-medium uppercase tracking-wider;
+    border: 1px solid var(--foreground);
+    background-color: var(--foreground);
+    color: var(--background);
   }
 
   .tag-teal {
@@ -225,32 +244,40 @@
 
   /* 카드 스타일 */
   .card-editorial {
-    @apply border-2 border-black bg-white;
+    @apply border-2;
+    border-color: var(--foreground);
+    background-color: var(--background);
   }
 
   /* 그리드 라인 */
   .grid-line {
-    @apply border-t border-black;
+    @apply border-t;
+    border-color: var(--foreground);
   }
 
   .grid-line-dashed {
-    @apply border-t border-dashed border-black;
+    @apply border-t border-dashed;
+    border-color: var(--foreground);
   }
 
   /* 헤더 스타일 */
   .header-editorial {
-    @apply border-b-2 border-black bg-white;
+    @apply border-b-2;
+    border-color: var(--foreground);
+    background-color: var(--background);
   }
 
   /* 섹션 타이틀 */
   .section-title {
     @apply font-serif text-2xl font-bold tracking-tight;
-    @apply border-b-2 border-black pb-2 mb-4;
+    @apply border-b-2 pb-2 mb-4;
+    border-color: var(--foreground);
   }
 
   /* 데이터 표시 */
   .data-label {
-    @apply text-xs uppercase tracking-wider text-gray-500;
+    @apply text-xs uppercase tracking-wider;
+    color: var(--muted-foreground);
   }
 
   .data-value {
@@ -259,17 +286,21 @@
 
   /* 구분선 */
   .divider {
-    @apply border-t border-black my-4;
+    @apply border-t my-4;
+    border-color: var(--foreground);
   }
 
   .divider-thick {
-    @apply border-t-2 border-black my-4;
+    @apply border-t-2 my-4;
+    border-color: var(--foreground);
   }
 
   /* 플래시카드 스타일 */
   .flashcard {
-    @apply border-2 border-black bg-white p-8;
+    @apply border-2 p-8;
     @apply min-h-[300px] flex flex-col items-center justify-center;
+    border-color: var(--foreground);
+    background-color: var(--background);
   }
 
   /* 3D 플립 카드 */
@@ -300,26 +331,34 @@
   }
 
   .flashcard-front {
-    @apply border-2 border-black bg-white;
+    @apply border-2;
     @apply flex flex-col;
+    border-color: var(--foreground);
+    background-color: var(--background);
   }
 
   .flashcard-back {
     transform: rotateY(180deg);
-    @apply border-2 border-black bg-white;
+    @apply border-2;
     @apply flex flex-col;
+    border-color: var(--foreground);
+    background-color: var(--background);
   }
 
   /* 입력 필드 스타일 */
   .input-editorial {
-    @apply border-2 border-black bg-white px-4 py-3;
+    @apply border-2 px-4 py-3;
     @apply focus:outline-none focus:ring-0;
-    @apply placeholder:text-gray-400;
+    @apply placeholder:text-gray-400 dark:placeholder:text-gray-600;
+    border-color: var(--foreground);
+    background-color: var(--background);
+    color: var(--foreground);
   }
 
   /* 진행률 바 */
   .progress-editorial {
-    @apply h-1 bg-gray-200 overflow-hidden;
+    @apply h-1 overflow-hidden;
+    background-color: var(--muted);
   }
 
   .progress-editorial-bar {
@@ -328,14 +367,15 @@
   }
 
   .progress-editorial-bar-black {
-    @apply h-full bg-black transition-all duration-300;
+    @apply h-full transition-all duration-300;
+    background-color: var(--foreground);
   }
 }
 
 @layer utilities {
   /* 테두리 유틸리티 */
   .border-editorial {
-    border: 2px solid #000000;
+    border: 2px solid var(--foreground);
   }
 
   /* 그림자 없음 */
@@ -350,6 +390,11 @@
 
   /* 호버 반전 */
   .hover-invert {
-    @apply hover:bg-black hover:text-white transition-colors;
+    @apply transition-colors;
+  }
+
+  .hover-invert:hover {
+    background-color: var(--foreground);
+    color: var(--background);
   }
 }
