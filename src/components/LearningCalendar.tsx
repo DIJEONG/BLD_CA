@@ -2,11 +2,14 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
-import { getTodayString, getCanadaDate } from '@/lib/date';
 
 export default function LearningCalendar() {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [today, setToday] = useState<string | null>(null);
+
+  const getMonthlyStats = useStore((state) => state.getMonthlyStats);
+  const profile = useStore((state) => state.profile);
+  const dailyGoal = profile?.dailyWordCount || 20;
 
   // 클라이언트에서만 캐나다 시간대 적용
   useEffect(() => {
@@ -24,21 +27,8 @@ export default function LearningCalendar() {
     setCurrentDate(new Date(canadaDateStr));
   }, []);
 
-  const getMonthlyStats = useStore((state) => state.getMonthlyStats);
-  const profile = useStore((state) => state.profile);
-  const dailyGoal = profile?.dailyWordCount || 20;
-
-  // 클라이언트 마운트 전에는 로딩 표시
-  if (!currentDate || !today) {
-    return (
-      <div className="border-2 border-black p-8 text-center">
-        <p className="text-gray-400 text-sm">Loading calendar...</p>
-      </div>
-    );
-  }
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth() + 1; // 1-indexed
+  const year = currentDate?.getFullYear() ?? new Date().getFullYear();
+  const month = currentDate ? currentDate.getMonth() + 1 : new Date().getMonth() + 1;
 
   const monthlyStats = useMemo(() => {
     return getMonthlyStats(year, month);
@@ -93,6 +83,15 @@ export default function LearningCalendar() {
   const studiedDays = Object.values(monthlyStats).filter(
     (stat) => stat.wordsStudied > 0
   ).length;
+
+  // 클라이언트 마운트 전에는 로딩 표시
+  if (!currentDate || !today) {
+    return (
+      <div className="border-2 border-black p-8 text-center">
+        <p className="text-gray-400 text-sm">Loading calendar...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="border-2 border-black">
