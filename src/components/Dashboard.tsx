@@ -9,8 +9,10 @@ import LearningPage from './learning/LearningPage';
 import WordSetEditor from './custom/WordSetEditor';
 import LearningCalendar from './LearningCalendar';
 import GuidePage from './GuidePage';
+import StudyPlanSelector from './StudyPlanSelector';
 import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
 import { getCanadaDate, getTodayString } from '@/lib/date';
+import { getPlanById } from '@/data/studyPlans';
 import { Word } from '@/types';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -18,6 +20,7 @@ export default function Dashboard() {
   const [isLearning, setIsLearning] = useState(false);
   const [selectedWordSetId, setSelectedWordSetId] = useState<string | null>(null);
   const [isWrongWordsMode, setIsWrongWordsMode] = useState(false);
+  const [isPlanMode, setIsPlanMode] = useState(false);
   const [customWords, setCustomWords] = useState<Word[] | null>(null);
   const [editingWordSetId, setEditingWordSetId] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
@@ -57,6 +60,10 @@ export default function Dashboard() {
   const getWrongWordsCount = useStore((state) => state.getWrongWordsCount);
   const getFullState = useStore((state) => state.getFullState);
   const importData = useStore((state) => state.importData);
+  const activeStudyPlan = useStore((state) => state.activeStudyPlan);
+  const getPlanProgress = useStore((state) => state.getPlanProgress);
+  const getTodayPlanWords = useStore((state) => state.getTodayPlanWords);
+  const cancelStudyPlan = useStore((state) => state.cancelStudyPlan);
 
   const customWordSets = getCustomWordSets();
   const wrongWordsCount = getWrongWordsCount();
@@ -78,12 +85,22 @@ export default function Dashboard() {
     setIsLearning(false);
     setSelectedWordSetId(null);
     setIsWrongWordsMode(false);
+    setIsPlanMode(false);
     setCustomWords(null);
   };
 
   const handleStartWrongWordsReview = () => {
     setIsWrongWordsMode(true);
     setSelectedWordSetId('wrong-words');
+    setIsLearning(true);
+  };
+
+  const handleStartPlanLearning = () => {
+    const todayWords = getTodayPlanWords();
+    if (todayWords.length === 0) return;
+    setIsPlanMode(true);
+    setCustomWords(todayWords);
+    setSelectedWordSetId('plan-words');
     setIsLearning(true);
   };
 
@@ -134,12 +151,14 @@ export default function Dashboard() {
 
   // 학습 화면
   if (isLearning && selectedWordSetId) {
+    const planName = isPlanMode && activeStudyPlan ? getPlanById(activeStudyPlan.planId)?.name : undefined;
     return (
       <LearningPage
         wordSetId={selectedWordSetId}
         onFinish={handleFinishLearning}
         wrongWordsMode={isWrongWordsMode}
         customWords={customWords || undefined}
+        modeName={planName ? `플랜: ${planName}` : undefined}
       />
     );
   }
@@ -216,6 +235,95 @@ export default function Dashboard() {
             </span>
           )}
         </div>
+
+        {/* 학습 플랜 섹션 */}
+        {activeStudyPlan ? (
+          <div className="border-2 border-foreground mb-8">
+            {(() => {
+              const progress = getPlanProgress();
+              const plan = getPlanById(activeStudyPlan.planId);
+              const todayWords = getTodayPlanWords();
+              if (!progress || !plan) return null;
+
+              const isCompleted = progress.completedWords >= progress.totalWords;
+
+              return (
+                <>
+                  <div className="border-b border-foreground px-4 py-3 bg-secondary flex items-center justify-between">
+                    <div>
+                      <h3 className="font-serif font-bold">{plan.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Day {progress.currentDay}/{progress.totalDays} · {progress.completedWords}/{progress.totalWords} 단어 완료
+                      </p>
+                    </div>
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => {
+                        if (confirm('플랜을 취소하시겠습니까? 진행 상황은 유지됩니다.')) {
+                          cancelStudyPlan();
+                        }
+                      }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                  <div className="p-4">
+                    {/* 진행률 바 */}
+                    <div className="mb-4">
+                      <div className="progress-editorial">
+                        <div
+                          className="progress-editorial-bar"
+                          style={{ width: `${progress.percentage}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground text-right mt-1 font-mono">
+                        {Math.round(progress.percentage)}%
+                      </p>
+                    </div>
+
+                    {/* 오늘 학습 버튼 */}
+                    {isCompleted ? (
+                      <div className="text-center py-4">
+                        <p className="font-serif text-lg font-bold mb-2" style={{ color: 'var(--accent-teal)' }}>
+                          플랜 완료!
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          축하합니다! 모든 단어를 학습했습니다.
+                        </p>
+                      </div>
+                    ) : todayWords.length > 0 ? (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold">오늘의 학습</p>
+                          <p className="text-sm text-muted-foreground">
+                            {todayWords.length}단어 남음
+                          </p>
+                        </div>
+                        <button
+                          className="tag-teal hover:opacity-80 transition-opacity"
+                          onClick={handleStartPlanLearning}
+                        >
+                          학습 시작 →
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="font-semibold mb-1">오늘 학습 완료!</p>
+                        <p className="text-sm text-muted-foreground">
+                          내일 다시 만나요
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        ) : (
+          <div className="mb-8">
+            <StudyPlanSelector onPlanStart={() => {}} />
+          </div>
+        )}
 
         {/* 통계 그리드 */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-foreground mb-8">

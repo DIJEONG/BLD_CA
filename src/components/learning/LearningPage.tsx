@@ -15,11 +15,12 @@ interface LearningPageProps {
   onFinish: () => void;
   wrongWordsMode?: boolean;
   customWords?: Word[];  // 특정 단어만 학습할 때 (일자별 학습 등)
+  modeName?: string;     // 학습 모드 이름 (플랜 학습 등)
 }
 
 type LearningPhase = 'preview' | 'flashcard' | 'typing' | 'result';
 
-export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = false, customWords }: LearningPageProps) {
+export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = false, customWords, modeName }: LearningPageProps) {
   const [phase, setPhase] = useState<LearningPhase>('preview');
   const [elapsedTime, setElapsedTime] = useState(0);
   const [initialized, setInitialized] = useState(false);
@@ -378,7 +379,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
               >
                 ← EXIT
               </button>
-              <span className="font-mono text-sm">{wrongWordsMode ? '오답 복습' : wordSet?.name}</span>
+              <span className="font-mono text-sm">{wrongWordsMode ? '오답 복습' : (modeName || wordSet?.name)}</span>
               <div className="w-16" />
             </div>
           </header>
@@ -412,7 +413,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             >
               ← EXIT
             </button>
-            <span className="font-mono text-sm">{wrongWordsMode ? '오답 복습' : wordSet?.name}</span>
+            <span className="font-mono text-sm">{wrongWordsMode ? '오답 복습' : (modeName || wordSet?.name)}</span>
             <div className="w-16" />
           </div>
         </header>

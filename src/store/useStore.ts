@@ -11,6 +11,7 @@ import {
   Confidence,
   CustomWordSet,
   Word,
+  ActiveStudyPlan,
 } from '@/types';
 import {
   calculateSM2,
@@ -19,7 +20,8 @@ import {
   SM2_DEFAULTS,
 } from '@/lib/sm2';
 import { getTodayString, getDaysDiff, getCanadaDate } from '@/lib/date';
-import { allWordSets } from '@/data/words';
+import { allWordSets, getWordsByIds } from '@/data/words';
+import { getPlanById, generatePlanWords } from '@/data/studyPlans';
 
 interface StoreActions {
   // 온보딩
@@ -67,6 +69,19 @@ interface StoreActions {
   // 데이터 내보내기/가져오기
   getFullState: () => AppState;
   importData: (data: AppState) => void;
+
+  // 학습 플랜
+  startStudyPlan: (planId: string) => void;
+  cancelStudyPlan: () => void;
+  getTodayPlanWords: () => Word[];
+  getPlanProgress: () => {
+    currentDay: number;
+    totalDays: number;
+    completedWords: number;
+    totalWords: number;
+    percentage: number;
+    wordsPerDay: number;
+  } | null;
 }
 
 const initialState: AppState = {
@@ -78,6 +93,7 @@ const initialState: AppState = {
   currentStreak: 0,
   lastStudyDate: null,
   customWordSets: [],
+  activeStudyPlan: null,
 };
 
 // 날짜 유틸은 @/lib/date 에서 import
@@ -405,6 +421,77 @@ export const useStore = create<AppState & StoreActions>()(
         return get().customWordSets;
       },
 
+      // === 학습 플랜 ===
+      startStudyPlan: (planId) => {
+        const plan = getPlanById(planId);
+        if (!plan) return;
+
+        const assignedWords = generatePlanWords(planId);
+
+        const activePlan: ActiveStudyPlan = {
+          planId,
+          startDate: getTodayString(),
+          assignedWords,
+        };
+
+        set({ activeStudyPlan: activePlan });
+      },
+
+      cancelStudyPlan: () => {
+        set({ activeStudyPlan: null });
+      },
+
+      getTodayPlanWords: () => {
+        const activePlan = get().activeStudyPlan;
+        if (!activePlan) return [];
+
+        const plan = getPlanById(activePlan.planId);
+        if (!plan) return [];
+
+        const wordProgress = get().wordProgress;
+
+        // 이미 학습한 단어 수 계산 (attemptCount > 0)
+        const completedCount = activePlan.assignedWords.filter(
+          (wordId) => wordProgress[wordId]?.attemptCount > 0
+        ).length;
+
+        // 오늘 학습할 단어 = 완료한 다음 단어부터 wordsPerDay개
+        const startIndex = completedCount;
+        const endIndex = Math.min(startIndex + plan.wordsPerDay, activePlan.assignedWords.length);
+
+        const todayWordIds = activePlan.assignedWords.slice(startIndex, endIndex);
+
+        // ID로 실제 Word 객체 조회
+        return getWordsByIds(todayWordIds);
+      },
+
+      getPlanProgress: () => {
+        const activePlan = get().activeStudyPlan;
+        if (!activePlan) return null;
+
+        const plan = getPlanById(activePlan.planId);
+        if (!plan) return null;
+
+        const wordProgress = get().wordProgress;
+
+        // 완료한 단어 수
+        const completedWords = activePlan.assignedWords.filter(
+          (wordId) => wordProgress[wordId]?.attemptCount > 0
+        ).length;
+
+        // 현재 일차 계산 (완료 단어 기준)
+        const currentDay = Math.floor(completedWords / plan.wordsPerDay) + 1;
+
+        return {
+          currentDay: Math.min(currentDay, plan.totalDays),
+          totalDays: plan.totalDays,
+          completedWords,
+          totalWords: activePlan.assignedWords.length,
+          percentage: (completedWords / activePlan.assignedWords.length) * 100,
+          wordsPerDay: plan.wordsPerDay,
+        };
+      },
+
       resetAll: () => {
         set(initialState);
       },
@@ -421,6 +508,7 @@ export const useStore = create<AppState & StoreActions>()(
           currentStreak: state.currentStreak,
           lastStudyDate: state.lastStudyDate,
           customWordSets: state.customWordSets,
+          activeStudyPlan: state.activeStudyPlan,
         };
       },
 
@@ -435,6 +523,7 @@ export const useStore = create<AppState & StoreActions>()(
           currentStreak: data.currentStreak,
           lastStudyDate: data.lastStudyDate,
           customWordSets: data.customWordSets,
+          activeStudyPlan: data.activeStudyPlan || null,
         });
       },
     }),

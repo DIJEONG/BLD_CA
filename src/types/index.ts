@@ -111,6 +111,25 @@ export interface CustomWordSet {
   updatedAt: string;
 }
 
+// 학습 플랜 템플릿 (미리 정의된 커리큘럼)
+export interface StudyPlanTemplate {
+  id: string;
+  name: string;
+  description: string;
+  totalDays: number;
+  totalWords: number;
+  gradeLevel: string;
+  wordsPerDay: number;
+  recommended?: boolean;
+}
+
+// 활성 학습 플랜 (사용자가 시작한 플랜)
+export interface ActiveStudyPlan {
+  planId: string;
+  startDate: string;           // YYYY-MM-DD
+  assignedWords: string[];     // 플랜에 포함된 전체 단어 ID 목록
+}
+
 // 전체 앱 상태
 export interface AppState {
   // 사용자
@@ -132,4 +151,7 @@ export interface AppState {
 
   // 커스텀 단어장
   customWordSets: CustomWordSet[];
+
+  // 학습 플랜
+  activeStudyPlan: ActiveStudyPlan | null;
 }
