@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
 import { useLearningStore } from '@/store/useLearningStore';
 import { useStore } from '@/store/useStore';
 import { getWordSetById, getWordsByIds } from '@/data/words';
@@ -25,6 +25,8 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
   const [initialized, setInitialized] = useState(false);
   const [previewWords, setPreviewWords] = useState<Word[]>([]);
   const [reviewWordIds, setReviewWordIds] = useState<Set<string>>(new Set());
+  const [isCardTransitioning, setIsCardTransitioning] = useState(false);
+  const prevIndexRef = useRef<number>(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const profile = useStore((state) => state.profile);
@@ -202,6 +204,18 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
       speak(currentWord.english);
     }
   }, [phase, isRevealed, currentWord]);
+
+  // 카드 전환 시 잠시 숨김 처리 (영단어 깜빡임 방지)
+  useLayoutEffect(() => {
+    if (phase === 'flashcard' && prevIndexRef.current !== -1 && prevIndexRef.current !== currentIndex) {
+      setIsCardTransitioning(true);
+      const timer = setTimeout(() => {
+        setIsCardTransitioning(false);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+    prevIndexRef.current = currentIndex;
+  }, [currentIndex, phase]);
 
   const handleStartLearning = () => {
     resetSession();
@@ -591,7 +605,11 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
         <main className="max-w-2xl mx-auto px-4 py-6 sm:py-12">
           {/* 3D 플립 카드 */}
-          <div className="flashcard-container h-[350px] sm:h-[400px]" key={currentIndex}>
+          <div
+            className="flashcard-container h-[350px] sm:h-[400px]"
+            key={currentIndex}
+            style={{ opacity: isCardTransitioning ? 0 : 1 }}
+          >
             <div className={`flashcard-inner ${isRevealed ? 'flipped' : ''}`}>
               {/* 앞면: 한국어 뜻 */}
               <div
