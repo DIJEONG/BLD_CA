@@ -1177,9 +1177,9 @@ export default function WordSetEditor({
             {/* 번역 편집 화면 */}
             {showTranslationEdit && (
               <div className="border-t-2 border-foreground">
-                <div className="border-b border-foreground px-4 py-3 bg-secondary flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Languages size={18} />
+                <div className="border-b border-foreground px-4 py-3 bg-secondary flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Languages size={18} className="shrink-0" />
                     <span className="font-semibold text-sm">번역 확인</span>
                     <span className="text-xs text-muted-foreground font-mono">
                       ({wordsWithTranslation.length}개)
@@ -1196,7 +1196,7 @@ export default function WordSetEditor({
                     })()}
                   </div>
                   <button
-                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50 self-end sm:self-auto"
                     onClick={handleAutoTranslateAll}
                     disabled={isAutoTranslating}
                   >
@@ -1213,37 +1213,54 @@ export default function WordSetEditor({
                     return (
                       <div
                         key={index}
-                        className={`flex items-center gap-2 px-4 py-2 ${
+                        className={`px-4 py-2 ${
                           index > 0 ? 'border-t border-foreground' : ''
                         } ${needsAttention && !word.isTranslating ? 'bg-amber-50 dark:bg-amber-950/30' : ''}`}
                       >
-                        {needsAttention && !word.isTranslating && (
-                          <span className="text-amber-500 text-sm">!</span>
-                        )}
-                        <span className={`font-medium text-sm min-w-[100px] sm:min-w-[120px] ${
-                          needsAttention && !word.isTranslating ? 'text-amber-600 dark:text-amber-400' : ''
-                        }`}>
-                          {word.english}
-                        </span>
-                        <Input
-                          placeholder="번역 입력..."
-                          value={word.korean}
-                          onChange={(e) => handleTranslationChange(index, e.target.value)}
-                          className={`flex-1 text-sm h-8 ${
-                            needsAttention && !word.isTranslating
-                              ? 'border-amber-400 dark:border-amber-600 border-2'
-                              : 'border border-foreground'
-                          }`}
-                          disabled={word.isTranslating}
-                        />
-                        <button
-                          className="tag text-[10px] px-2 py-1 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50"
-                          onClick={() => handleAutoTranslateSingle(index)}
-                          disabled={word.isTranslating}
-                          title="자동 번역"
-                        >
-                          {word.isTranslating ? '...' : '재번역'}
-                        </button>
+                        {/* 영어 단어 (모바일: 상단, 데스크톱: 인라인) */}
+                        <div className="flex items-center gap-1 mb-1 sm:mb-0 sm:hidden">
+                          {needsAttention && !word.isTranslating && (
+                            <span className="text-amber-500 text-sm">!</span>
+                          )}
+                          <span className={`font-medium text-sm ${
+                            needsAttention && !word.isTranslating ? 'text-amber-600 dark:text-amber-400' : ''
+                          }`}>
+                            {word.english}
+                          </span>
+                        </div>
+                        {/* 입력 행 */}
+                        <div className="flex items-center gap-2">
+                          {/* 데스크톱에서만 영어 단어 표시 */}
+                          <div className="hidden sm:flex items-center gap-1 min-w-[120px]">
+                            {needsAttention && !word.isTranslating && (
+                              <span className="text-amber-500 text-sm">!</span>
+                            )}
+                            <span className={`font-medium text-sm ${
+                              needsAttention && !word.isTranslating ? 'text-amber-600 dark:text-amber-400' : ''
+                            }`}>
+                              {word.english}
+                            </span>
+                          </div>
+                          <Input
+                            placeholder="번역 입력..."
+                            value={word.korean}
+                            onChange={(e) => handleTranslationChange(index, e.target.value)}
+                            className={`flex-1 text-sm h-8 ${
+                              needsAttention && !word.isTranslating
+                                ? 'border-amber-400 dark:border-amber-600 border-2'
+                                : 'border border-foreground'
+                            }`}
+                            disabled={word.isTranslating}
+                          />
+                          <button
+                            className="tag text-[10px] px-2 py-1 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 shrink-0"
+                            onClick={() => handleAutoTranslateSingle(index)}
+                            disabled={word.isTranslating}
+                            title="자동 번역"
+                          >
+                            {word.isTranslating ? '...' : '재번역'}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
