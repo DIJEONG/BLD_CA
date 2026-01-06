@@ -117,7 +117,7 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-2 border-black p-4">
+    <form onSubmit={handleSubmit} className="border-2 border-foreground p-4">
       <div className="space-y-3">
         {/* 영어 입력 */}
         <div>
@@ -128,7 +128,7 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
             value={english}
             onChange={(e) => setEnglish(e.target.value)}
             autoComplete="off"
-            className="text-base border-2 border-black"
+            className="text-base border-2 border-foreground"
           />
         </div>
 
@@ -142,16 +142,16 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
               placeholder={isTranslating ? '번역 중...' : '한국어 뜻 (자동 번역)'}
               value={korean}
               onChange={(e) => setKorean(e.target.value)}
-              className="text-base border-2 border-black"
+              className="text-base border-2 border-foreground"
             />
             {isTranslating && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-sm">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm">
                 ...
               </span>
             )}
           </div>
           {translationError && (
-            <p className="text-sm text-gray-500 mt-1 font-mono">
+            <p className="text-sm text-muted-foreground mt-1 font-mono">
               * {translationError} - 직접 입력해주세요
             </p>
           )}
@@ -164,7 +164,7 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
             placeholder="/prəˌnʌnsɪˈeɪʃən/"
             value={pronunciation}
             onChange={(e) => setPronunciation(e.target.value)}
-            className="text-base border-2 border-black font-mono"
+            className="text-base border-2 border-foreground font-mono"
           />
         </div>
 
@@ -177,14 +177,14 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
             placeholder="She has a comprehensive vocabulary."
             value={example}
             onChange={(e) => setExample(e.target.value)}
-            className="text-base border-2 border-black"
+            className="text-base border-2 border-foreground"
           />
           {example && (
             <Input
               placeholder="예문 번역 (자동)"
               value={exampleKorean}
               onChange={(e) => setExampleKorean(e.target.value)}
-              className="text-base border-2 border-black border-t-0 text-sm"
+              className="text-base border-2 border-foreground border-t-0 text-sm"
             />
           )}
         </div>
@@ -193,7 +193,7 @@ export default function AddWordForm({ wordSetId, onSuccess }: AddWordFormProps) 
         <button
           type="submit"
           disabled={!english.trim() || !korean.trim() || isTranslating}
-          className="w-full border-2 border-black bg-black text-white py-3 font-medium tracking-wide hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full border-2 border-foreground bg-foreground text-background py-3 font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           + ADD WORD
         </button>

@@ -161,14 +161,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* 헤더 */}
-      <header className="border-b-2 border-black">
+      <header className="border-b-2 border-foreground">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">VOCAB</h1>
-              <p className="text-xs uppercase tracking-widest text-gray-500">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
                 {dateStr}
               </p>
             </div>
@@ -203,8 +203,8 @@ export default function Dashboard() {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* 환영 메시지 */}
-        <div className="border-b border-black pb-6 mb-8">
-          <p className="text-sm uppercase tracking-wider text-gray-500 mb-2">
+        <div className="border-b border-foreground pb-6 mb-8">
+          <p className="text-sm uppercase tracking-wider text-muted-foreground mb-2">
             Welcome back
           </p>
           <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4">
@@ -218,20 +218,20 @@ export default function Dashboard() {
         </div>
 
         {/* 통계 그리드 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-black mb-8">
-          <div className="p-3 sm:p-4 border-r border-black border-b sm:border-b-0">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-foreground mb-8">
+          <div className="p-3 sm:p-4 border-r border-foreground border-b sm:border-b-0">
             <p className="data-label">오늘 학습</p>
             <p className="data-value font-mono">
               {todayStats?.wordsStudied || 0}/{dailyGoal}
             </p>
           </div>
-          <div className="p-3 sm:p-4 sm:border-r border-black border-b sm:border-b-0">
+          <div className="p-3 sm:p-4 sm:border-r border-foreground border-b sm:border-b-0">
             <p className="data-label">정답</p>
-            <p className="data-value font-mono text-black">
+            <p className="data-value font-mono">
               {todayStats?.correctCount || 0}
             </p>
           </div>
-          <div className="p-3 sm:p-4 border-r border-black">
+          <div className="p-3 sm:p-4 border-r border-foreground">
             <p className="data-label">오답</p>
             <p className="data-value font-mono">
               {todayStats?.wrongCount || 0}
@@ -289,8 +289,8 @@ export default function Dashboard() {
         )}
 
         {/* 주간 통계 */}
-        <div className="border-2 border-black mb-8">
-          <div className="border-b border-black px-4 py-2">
+        <div className="border-2 border-foreground mb-8">
+          <div className="border-b border-foreground px-4 py-2">
             <span className="text-sm uppercase tracking-wider">Weekly Activity</span>
           </div>
           {(() => {
@@ -301,12 +301,12 @@ export default function Dashboard() {
               <div className="relative">
                 {/* 활동 없을 때 동기부여 메시지 */}
                 {!hasAnyActivity && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/90 z-10">
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/90 z-10">
                     <div className="text-center px-4">
                       <p className="font-serif text-lg font-bold mb-1">
                         첫 학습을 시작해보세요
                       </p>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">
                         Start your journey today
                       </p>
                     </div>
@@ -325,7 +325,7 @@ export default function Dashboard() {
                       <div
                         key={i}
                         className={`flex flex-col items-center justify-end p-1 sm:p-2 ${
-                          i < 6 ? 'border-r border-black' : ''
+                          i < 6 ? 'border-r border-foreground' : ''
                         }`}
                       >
                         {/* 학습 기록 있으면 막대, 없으면 점선 */}
@@ -349,7 +349,7 @@ export default function Dashboard() {
                           </div>
                         )}
                         <span
-                          className={`text-[10px] sm:text-xs mt-1 font-mono ${isToday ? 'font-bold' : 'text-gray-400'}`}
+                          className={`text-[10px] sm:text-xs mt-1 font-mono ${isToday ? 'font-bold' : 'text-muted-foreground'}`}
                           style={{ color: isToday ? 'var(--accent-teal)' : undefined }}
                         >
                           {day}
@@ -375,18 +375,18 @@ export default function Dashboard() {
             {recommendedWordSets.map((wordSet, index) => (
               <div
                 key={wordSet.id}
-                className={`flex justify-between items-center p-4 border-2 border-black ${
+                className={`flex justify-between items-center p-4 border-2 border-foreground ${
                   index > 0 ? 'border-t-0' : ''
-                } hover:bg-black hover:text-white transition-colors cursor-pointer group`}
+                } hover:bg-foreground hover:text-background transition-colors cursor-pointer group`}
                 onClick={() => handleStartLearning(wordSet.id)}
               >
                 <div>
                   <h4 className="font-semibold">{wordSet.name}</h4>
-                  <p className="text-sm text-gray-500 group-hover:text-gray-300 font-mono">
+                  <p className="text-sm text-muted-foreground group-hover:text-gray-300 dark:group-hover:text-gray-600 font-mono">
                     {wordSet.words.length} WORDS
                   </p>
                 </div>
-                <span className="tag group-hover:bg-white group-hover:text-black">
+                <span className="tag group-hover:bg-background group-hover:text-foreground">
                   START →
                 </span>
               </div>
@@ -396,7 +396,7 @@ export default function Dashboard() {
           {/* 다른 단어장 */}
           {recommendedWordSets.length < allWordSets.length && (
             <div className="mt-6">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
                 Other Collections
               </p>
               <div className="space-y-0">
@@ -405,18 +405,18 @@ export default function Dashboard() {
                   .map((wordSet, index) => (
                     <div
                       key={wordSet.id}
-                      className={`flex justify-between items-center p-4 border border-black ${
+                      className={`flex justify-between items-center p-4 border border-foreground ${
                         index > 0 ? 'border-t-0' : ''
-                      } hover:bg-black hover:text-white transition-colors cursor-pointer group opacity-60 hover:opacity-100`}
+                      } hover:bg-foreground hover:text-background transition-colors cursor-pointer group opacity-60 hover:opacity-100`}
                       onClick={() => handleStartLearning(wordSet.id)}
                     >
                       <div>
                         <h4 className="font-semibold">{wordSet.name}</h4>
-                        <p className="text-sm text-gray-500 group-hover:text-gray-300 font-mono">
+                        <p className="text-sm text-muted-foreground group-hover:text-gray-300 dark:group-hover:text-gray-600 font-mono">
                           {wordSet.words.length} WORDS
                         </p>
                       </div>
-                      <span className="tag group-hover:bg-white group-hover:text-black">
+                      <span className="tag group-hover:bg-background group-hover:text-foreground">
                         START →
                       </span>
                     </div>
@@ -442,7 +442,7 @@ export default function Dashboard() {
 
           {/* 새 단어장 만들기 폼 */}
           {isCreatingWordSet && (
-            <div className="border-2 border-black p-4 mb-4">
+            <div className="border-2 border-foreground p-4 mb-4">
               <div className="flex gap-2">
                 <Input
                   placeholder="단어장 이름"
@@ -455,7 +455,7 @@ export default function Dashboard() {
                       setNewWordSetName('');
                     }
                   }}
-                  className="flex-1 border-2 border-black"
+                  className="flex-1 border-2 border-foreground"
                   autoFocus
                 />
                 <Button
@@ -481,13 +481,13 @@ export default function Dashboard() {
 
           {/* 커스텀 단어장 목록 */}
           {customWordSets.length === 0 && !isCreatingWordSet ? (
-            <div className="border-2 border-dashed border-black p-8 text-center">
-              <p className="text-gray-500 mb-2">아직 내 단어장이 없습니다</p>
-              <p className="text-sm text-gray-400 mb-4">
+            <div className="border-2 border-dashed border-foreground p-8 text-center">
+              <p className="text-muted-foreground mb-2">아직 내 단어장이 없습니다</p>
+              <p className="text-sm text-muted-foreground mb-4">
                 오늘 학습하고 싶은 단어를 직접 추가해보세요
               </p>
               <button
-                className="tag hover:bg-black hover:text-white transition-colors"
+                className="tag hover:bg-foreground hover:text-background transition-colors"
                 onClick={() => setIsCreatingWordSet(true)}
               >
                 + 첫 단어장 만들기
@@ -498,26 +498,26 @@ export default function Dashboard() {
               {customWordSets.map((wordSet, index) => (
                 <div
                   key={wordSet.id}
-                  className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border-2 border-black ${
+                  className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border-2 border-foreground ${
                     index > 0 ? 'border-t-0' : ''
                   }`}
                 >
                   <div className="mb-2 sm:mb-0">
                     <h4 className="font-semibold">{wordSet.name}</h4>
-                    <p className="text-sm text-gray-500 font-mono">
+                    <p className="text-sm text-muted-foreground font-mono">
                       {wordSet.words.length} WORDS
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <button
-                      className="tag hover:bg-black hover:text-white transition-colors"
+                      className="tag hover:bg-foreground hover:text-background transition-colors"
                       onClick={() => handleEditWordSet(wordSet.id)}
                     >
                       EDIT
                     </button>
                     {wordSet.words.length > 0 && (
                       <button
-                        className="tag-filled hover:bg-white hover:text-black transition-colors"
+                        className="tag-filled hover:bg-background hover:text-foreground transition-colors"
                         onClick={() => handleStartLearning(wordSet.id)}
                       >
                         START →
@@ -533,19 +533,19 @@ export default function Dashboard() {
 
       {/* 데이터 관리 */}
       <section className="max-w-4xl mx-auto px-4 mt-12">
-        <div className="border-2 border-black">
-          <div className="border-b border-black px-4 py-2">
+        <div className="border-2 border-foreground">
+          <div className="border-b border-foreground px-4 py-2">
             <span className="text-sm uppercase tracking-wider">데이터 관리</span>
           </div>
-          <div className="grid grid-cols-2 divide-x divide-black">
+          <div className="grid grid-cols-2 divide-x divide-foreground">
             <button
-              className="py-4 tracking-wider text-sm hover:bg-black hover:text-white transition-colors"
+              className="py-4 tracking-wider text-sm hover:bg-foreground hover:text-background transition-colors"
               onClick={handleExport}
             >
               내보내기
             </button>
             <button
-              className="py-4 tracking-wider text-sm hover:bg-black hover:text-white transition-colors"
+              className="py-4 tracking-wider text-sm hover:bg-foreground hover:text-background transition-colors"
               onClick={handleImportClick}
             >
               가져오기
@@ -562,9 +562,9 @@ export default function Dashboard() {
       </section>
 
       {/* 푸터 */}
-      <footer className="border-t-2 border-black mt-16">
+      <footer className="border-t-2 border-foreground mt-16">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <p className="text-xs text-center text-gray-500 uppercase tracking-wider">
+          <p className="text-xs text-center text-muted-foreground uppercase tracking-wider">
             VOCAB — A Minimalist Vocabulary Learning App
           </p>
         </div>

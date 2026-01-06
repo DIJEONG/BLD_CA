@@ -132,16 +132,16 @@ export default function LearningCalendar() {
   // 클라이언트 마운트 전에는 로딩 표시
   if (!currentDate || !today) {
     return (
-      <div className="border-2 border-black p-8 text-center">
-        <p className="text-gray-400 text-sm">Loading calendar...</p>
+      <div className="border-2 border-foreground p-8 text-center">
+        <p className="text-muted-foreground text-sm">Loading calendar...</p>
       </div>
     );
   }
 
   return (
-    <div className="border-2 border-black">
+    <div className="border-2 border-foreground">
       {/* 헤더 */}
-      <div className="border-b border-black px-4 py-2 flex justify-between items-center">
+      <div className="border-b border-foreground px-4 py-2 flex justify-between items-center">
         <span className="text-sm uppercase tracking-wider">Monthly Calendar</span>
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono" style={{ color: 'var(--accent-teal)' }}>
@@ -151,10 +151,10 @@ export default function LearningCalendar() {
       </div>
 
       {/* 월 네비게이션 */}
-      <div className="border-b border-black px-4 py-3 flex justify-between items-center">
+      <div className="border-b border-foreground px-4 py-3 flex justify-between items-center">
         <button
           onClick={handlePrevMonth}
-          className="tag hover:bg-black hover:text-white transition-colors"
+          className="tag hover:bg-foreground hover:text-background transition-colors"
         >
           ←
         </button>
@@ -163,20 +163,20 @@ export default function LearningCalendar() {
         </span>
         <button
           onClick={handleNextMonth}
-          className="tag hover:bg-black hover:text-white transition-colors"
+          className="tag hover:bg-foreground hover:text-background transition-colors"
         >
           →
         </button>
       </div>
 
       {/* 요일 헤더 */}
-      <div className="grid grid-cols-7 border-b border-black">
+      <div className="grid grid-cols-7 border-b border-foreground">
         {dayNames.map((day, i) => (
           <div
             key={i}
             className={`py-2 text-center text-xs font-mono uppercase ${
-              i < 6 ? 'border-r border-black' : ''
-            } ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-500'}`}
+              i < 6 ? 'border-r border-foreground' : ''
+            } ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-muted-foreground'}`}
           >
             {day}
           </div>
@@ -198,11 +198,11 @@ export default function LearningCalendar() {
               key={index}
               className={`
                 relative min-h-[48px] sm:min-h-[56px] p-1 sm:p-2
-                ${index % 7 !== 6 ? 'border-r border-black' : ''}
-                ${index < calendarData.length - 7 || (index >= calendarData.length - 7 && Math.floor(index / 7) < Math.floor((calendarData.length - 1) / 7)) ? 'border-b border-black' : ''}
-                ${isToday ? 'bg-gray-100' : ''}
+                ${index % 7 !== 6 ? 'border-r border-foreground' : ''}
+                ${index < calendarData.length - 7 || (index >= calendarData.length - 7 && Math.floor(index / 7) < Math.floor((calendarData.length - 1) / 7)) ? 'border-b border-foreground' : ''}
+                ${isToday ? 'bg-secondary' : ''}
                 ${hasActivity ? 'cursor-pointer hover:opacity-80' : ''}
-                ${isSelected ? 'ring-2 ring-inset ring-black' : ''}
+                ${isSelected ? 'ring-2 ring-inset ring-foreground' : ''}
               `}
               style={hasActivity && achievedGoal ? { backgroundColor: 'var(--accent-teal-light)' } : {}}
               onClick={() => day.date && handleDateClick(day.dateStr, hasActivity)}
@@ -239,14 +239,14 @@ export default function LearningCalendar() {
 
       {/* 선택된 날짜의 단어 목록 */}
       {selectedDate && selectedDateWords.length > 0 && (
-        <div className="border-t-2 border-black">
-          <div className="border-b border-black px-4 py-2 flex justify-between items-center bg-gray-50">
+        <div className="border-t-2 border-foreground">
+          <div className="border-b border-foreground px-4 py-2 flex justify-between items-center bg-secondary">
             <span className="text-sm font-semibold">
               {selectedDate} 학습 단어 ({selectedDateWords.length}개)
             </span>
             <button
               onClick={() => setSelectedDate(null)}
-              className="text-xs text-gray-500 hover:text-black"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               닫기 ✕
             </button>
@@ -256,13 +256,13 @@ export default function LearningCalendar() {
               <div
                 key={word.id}
                 className={`flex items-center justify-between px-4 py-2 ${
-                  index > 0 ? 'border-t border-gray-200' : ''
+                  index > 0 ? 'border-t border-border' : ''
                 }`}
               >
                 <div className="flex-1 min-w-0">
                   <span className="font-semibold text-sm">{word.english}</span>
-                  <span className="text-gray-400 mx-2">—</span>
-                  <span className="text-gray-600 text-sm">{word.korean}</span>
+                  <span className="text-muted-foreground mx-2">—</span>
+                  <span className="text-muted-foreground text-sm">{word.korean}</span>
                 </div>
                 <span
                   className="text-xs font-mono ml-2"
@@ -277,17 +277,17 @@ export default function LearningCalendar() {
       )}
 
       {/* 범례 */}
-      <div className="border-t border-black px-4 py-2 flex justify-end gap-4 text-xs">
+      <div className="border-t border-foreground px-4 py-2 flex justify-end gap-4 text-xs">
         <div className="flex items-center gap-1">
           <div
-            className="w-3 h-3 border border-black"
+            className="w-3 h-3 border border-foreground"
             style={{ backgroundColor: 'var(--accent-teal-light)' }}
           />
-          <span className="text-gray-500">목표 달성</span>
+          <span className="text-muted-foreground">목표 달성</span>
         </div>
         <div className="flex items-center gap-1">
           <span className="font-mono" style={{ color: 'var(--accent-amber)' }}>15</span>
-          <span className="text-gray-500">미달성</span>
+          <span className="text-muted-foreground">미달성</span>
         </div>
       </div>
     </div>

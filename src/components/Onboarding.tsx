@@ -38,20 +38,20 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         {/* 헤더 */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-serif font-bold tracking-tight mb-2">VOCAB</h1>
-          <p className="text-sm uppercase tracking-wider text-gray-500">
+          <p className="text-sm uppercase tracking-wider text-muted-foreground">
             Minimalist Vocabulary Learning
           </p>
         </div>
 
         {/* 메인 카드 */}
-        <div className="border-2 border-black">
+        <div className="border-2 border-foreground">
           {/* 타이틀 영역 */}
-          <div className="border-b-2 border-black px-6 py-4">
+          <div className="border-b-2 border-foreground px-6 py-4">
             <span className="tag">Step {step} / 3</span>
             <h2 className="text-xl font-serif font-bold mt-2">
               {step === 1 && '닉네임을 입력하세요'}
@@ -71,11 +71,11 @@ export default function Onboarding() {
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     maxLength={20}
-                    className="border-2 border-black text-lg"
+                    className="border-2 border-foreground text-lg"
                   />
                 </div>
                 <button
-                  className="w-full border-2 border-black bg-black text-white py-3 font-medium tracking-wide hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full border-2 border-foreground bg-foreground text-background py-3 font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => setStep(2)}
                   disabled={nickname.trim().length < 2}
                 >
@@ -92,17 +92,17 @@ export default function Onboarding() {
                     {gradeLevels.map((level, index) => (
                       <button
                         key={level.value}
-                        className={`w-full p-3 border-2 border-black font-medium transition-colors text-left ${
+                        className={`w-full p-3 border-2 border-foreground font-medium transition-colors text-left ${
                           index > 0 ? 'border-t-0' : ''
                         } ${
                           gradeLevel === level.value
-                            ? 'bg-black text-white'
-                            : 'bg-white text-black hover:bg-gray-100'
+                            ? 'bg-foreground text-background'
+                            : 'bg-background text-foreground hover:bg-secondary'
                         }`}
                         onClick={() => setGradeLevel(level.value)}
                       >
                         <span className="font-bold font-mono">{level.label}</span>
-                        <span className={`ml-2 text-sm ${gradeLevel === level.value ? 'text-gray-300' : 'text-gray-500'}`}>
+                        <span className={`ml-2 text-sm ${gradeLevel === level.value ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
                           {level.description}
                         </span>
                       </button>
@@ -111,13 +111,13 @@ export default function Onboarding() {
                 </div>
                 <div className="flex gap-0">
                   <button
-                    className="flex-1 border-2 border-black py-3 font-medium tracking-wide hover:bg-black hover:text-white transition-colors"
+                    className="flex-1 border-2 border-foreground py-3 font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
                     onClick={() => setStep(1)}
                   >
                     ← BACK
                   </button>
                   <button
-                    className="flex-1 border-2 border-l-0 border-black bg-black text-white py-3 font-medium tracking-wide hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 border-2 border-l-0 border-foreground bg-foreground text-background py-3 font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => setStep(3)}
                     disabled={!gradeLevel}
                   >
@@ -135,12 +135,12 @@ export default function Onboarding() {
                     {dailyWordOptions.map((count, index) => (
                       <button
                         key={count}
-                        className={`p-3 border-2 border-black font-mono font-bold transition-colors ${
+                        className={`p-3 border-2 border-foreground font-mono font-bold transition-colors ${
                           index > 0 ? 'border-l-0' : ''
                         } ${
                           dailyWordCount === count
-                            ? 'bg-black text-white'
-                            : 'bg-white text-black hover:bg-gray-100'
+                            ? 'bg-foreground text-background'
+                            : 'bg-background text-foreground hover:bg-secondary'
                         }`}
                         onClick={() => setDailyWordCount(count)}
                       >
@@ -154,13 +154,13 @@ export default function Onboarding() {
                 </div>
                 <div className="flex gap-0">
                   <button
-                    className="flex-1 border-2 border-black py-3 font-medium tracking-wide hover:bg-black hover:text-white transition-colors"
+                    className="flex-1 border-2 border-foreground py-3 font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
                     onClick={() => setStep(2)}
                   >
                     ← BACK
                   </button>
                   <button
-                    className="flex-1 border-2 border-l-0 border-black bg-black text-white py-3 font-medium tracking-wide hover:bg-white hover:text-black transition-colors"
+                    className="flex-1 border-2 border-l-0 border-foreground bg-foreground text-background py-3 font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors"
                     onClick={handleComplete}
                   >
                     START →
@@ -174,7 +174,7 @@ export default function Onboarding() {
               {[1, 2, 3].map((s) => (
                 <div
                   key={s}
-                  className={`w-8 h-1 ${s === step ? 'bg-black' : 'bg-gray-300'}`}
+                  className={`w-8 h-1 ${s === step ? 'bg-foreground' : 'bg-muted'}`}
                 />
               ))}
             </div>
@@ -189,7 +189,7 @@ export default function Onboarding() {
           >
             GUIDE
           </button>
-          <p className="text-xs text-gray-400 mt-3 uppercase tracking-wider">
+          <p className="text-xs text-muted-foreground mt-3 uppercase tracking-wider">
             A Minimalist Vocabulary Learning App
           </p>
         </div>

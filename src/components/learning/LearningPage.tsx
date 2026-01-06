@@ -355,11 +355,11 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     // 학습할 단어가 없는 경우
     if (previewWords.length === 0) {
       return (
-        <div className="min-h-screen bg-white">
-          <header className="border-b-2 border-black">
+        <div className="min-h-screen bg-background">
+          <header className="border-b-2 border-foreground">
             <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
               <button
-                className="tag hover:bg-black hover:text-white transition-colors"
+                className="tag hover:bg-foreground hover:text-background transition-colors"
                 onClick={onFinish}
               >
                 ← EXIT
@@ -372,13 +372,13 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             <h1 className="text-2xl font-serif font-bold mb-4">
               {wrongWordsMode ? '복습할 오답이 없습니다' : '학습할 단어가 없습니다'}
             </h1>
-            <p className="text-gray-500 mb-8">
+            <p className="text-muted-foreground mb-8">
               {wrongWordsMode
                 ? '틀린 단어가 없거나 해당 단어장이 삭제되었습니다.'
                 : '단어장에 단어가 없습니다.'}
             </p>
             <button
-              className="tag hover:bg-black hover:text-white transition-colors"
+              className="tag hover:bg-foreground hover:text-background transition-colors"
               onClick={onFinish}
             >
               돌아가기
@@ -389,11 +389,11 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     }
 
     return (
-      <div className="min-h-screen bg-white">
-        <header className="border-b-2 border-black">
+      <div className="min-h-screen bg-background">
+        <header className="border-b-2 border-foreground">
           <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
             <button
-              className="tag hover:bg-black hover:text-white transition-colors"
+              className="tag hover:bg-foreground hover:text-background transition-colors"
               onClick={onFinish}
             >
               ← EXIT
@@ -405,7 +405,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
         <main className="max-w-2xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
-            <p className="text-sm uppercase tracking-wider text-gray-500 mb-2">
+            <p className="text-sm uppercase tracking-wider text-muted-foreground mb-2">
               {wrongWordsMode ? 'Wrong Words Review' : "Today's Session"}
             </p>
             <h1 className="text-3xl sm:text-4xl font-serif font-bold mb-2">
@@ -423,26 +423,26 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
           </div>
 
           {/* 학습 단계 안내 */}
-          <div className="grid grid-cols-2 gap-0 border-2 border-black mb-8">
-            <div className="p-4 sm:p-6 border-r border-black text-center">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Phase 1</p>
+          <div className="grid grid-cols-2 gap-0 border-2 border-foreground mb-8">
+            <div className="p-4 sm:p-6 border-r border-foreground text-center">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Phase 1</p>
               <h3 className="font-serif font-bold text-base sm:text-lg">FLASHCARD</h3>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">암기</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">암기</p>
             </div>
             <div className="p-4 sm:p-6 text-center">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Phase 2</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Phase 2</p>
               <h3 className="font-serif font-bold text-base sm:text-lg">TYPING</h3>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">테스트</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">테스트</p>
             </div>
           </div>
 
           {/* 단어 목록 */}
-          <div className="border-2 border-black mb-8">
-            <div className="border-b border-black px-4 py-2 flex justify-between items-center">
+          <div className="border-2 border-foreground mb-8">
+            <div className="border-b border-foreground px-4 py-2 flex justify-between items-center">
               <span className="text-sm uppercase tracking-wider">Word List</span>
               {!wrongWordsMode && wordSet && wordSet.words.length > dailyGoal && (
                 <button
-                  className="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors"
+                  className="text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
                   onClick={handleShuffleWords}
                 >
                   다른 단어 ↻
@@ -456,14 +456,14 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                   <div
                     key={word.id}
                     className={`flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 ${
-                      index > 0 ? 'border-t border-black' : ''
-                    } ${isReview ? 'bg-gray-50' : ''}`}
+                      index > 0 ? 'border-t border-foreground' : ''
+                    } ${isReview ? 'bg-secondary' : ''}`}
                   >
                     <span className="font-mono text-xs sm:text-sm w-6 sm:w-8">{String(index + 1).padStart(2, '0')}</span>
                     <div className="flex-1 min-w-0">
                       <span className="font-semibold text-sm sm:text-base">{word.english}</span>
-                      <span className="text-gray-400 mx-1 sm:mx-2">—</span>
-                      <span className="text-gray-600 text-sm sm:text-base">{word.korean}</span>
+                      <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{word.korean}</span>
                     </div>
                     {isReview && (
                       <span className={`${wrongWordsMode ? 'tag-error' : 'tag-teal'} text-[10px] sm:text-xs shrink-0`}>
@@ -477,13 +477,13 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
           </div>
 
           <button
-            className="w-full py-4 border-2 border-black bg-black text-white font-semibold uppercase tracking-wider hover:bg-white hover:text-black transition-colors"
+            className="w-full py-4 border-2 border-foreground bg-foreground text-background font-semibold uppercase tracking-wider hover:bg-background hover:text-foreground transition-colors"
             onClick={handleStartLearning}
           >
             START PHASE 1 →
           </button>
 
-          <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider">
+          <p className="text-center text-xs text-muted-foreground mt-4 uppercase tracking-wider">
             Review words before starting
           </p>
         </main>
@@ -496,11 +496,11 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     const flashcardProgress = getFlashcardProgress();
 
     return (
-      <div className="min-h-screen bg-white">
-        <header className="border-b-2 border-black">
+      <div className="min-h-screen bg-background">
+        <header className="border-b-2 border-foreground">
           <div className="max-w-2xl mx-auto px-4 py-4 flex justify-between items-center">
             <button
-              className="tag hover:bg-black hover:text-white transition-colors"
+              className="tag hover:bg-foreground hover:text-background transition-colors"
               onClick={onFinish}
             >
               ← EXIT
@@ -510,13 +510,13 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         </header>
 
         <main className="max-w-2xl mx-auto px-4 py-8 sm:py-16 text-center">
-          <p className="text-sm uppercase tracking-wider text-gray-500 mb-4">
+          <p className="text-sm uppercase tracking-wider text-muted-foreground mb-4">
             Phase 1 Complete
           </p>
           <h1 className="text-3xl sm:text-5xl font-serif font-bold mb-8">FLASHCARD DONE</h1>
 
-          <div className="grid grid-cols-2 gap-0 border-2 border-black mb-8 max-w-sm mx-auto">
-            <div className="p-4 sm:p-6 border-r border-black">
+          <div className="grid grid-cols-2 gap-0 border-2 border-foreground mb-8 max-w-sm mx-auto">
+            <div className="p-4 sm:p-6 border-r border-foreground">
               <p className="data-label">알았다</p>
               <p className="data-value font-mono">{flashcardProgress.knew}</p>
             </div>
@@ -526,14 +526,14 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             </div>
           </div>
 
-          <div className="border-2 border-black p-4 sm:p-6 mb-8 max-w-sm mx-auto">
-            <p className="text-sm uppercase tracking-wider text-gray-500 mb-2">Next</p>
+          <div className="border-2 border-foreground p-4 sm:p-6 mb-8 max-w-sm mx-auto">
+            <p className="text-sm uppercase tracking-wider text-muted-foreground mb-2">Next</p>
             <h3 className="font-serif font-bold text-lg sm:text-xl">PHASE 2: TYPING</h3>
-            <p className="text-sm text-gray-500 mt-2">직접 입력해서 테스트해보세요</p>
+            <p className="text-sm text-muted-foreground mt-2">직접 입력해서 테스트해보세요</p>
           </div>
 
           <button
-            className="px-8 py-4 border-2 border-black bg-black text-white font-semibold uppercase tracking-wider hover:bg-white hover:text-black transition-colors"
+            className="px-8 py-4 border-2 border-foreground bg-foreground text-background font-semibold uppercase tracking-wider hover:bg-background hover:text-foreground transition-colors"
             onClick={handleStartTyping}
           >
             START PHASE 2 →
@@ -547,8 +547,8 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
   if (phase === 'flashcard') {
     if (!currentWord || !isActive) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
-          <p className="text-gray-500 uppercase tracking-wider">Loading...</p>
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <p className="text-muted-foreground uppercase tracking-wider">Loading...</p>
         </div>
       );
     }
@@ -558,12 +558,12 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     const progressPercent = (currentQuestion / flashcardProgress.total) * 100;
 
     return (
-      <div className="min-h-screen bg-white">
-        <header className="border-b-2 border-black">
+      <div className="min-h-screen bg-background">
+        <header className="border-b-2 border-foreground">
           <div className="max-w-2xl mx-auto px-4 py-4">
             <div className="flex justify-between items-center mb-3">
               <button
-                className="tag hover:bg-black hover:text-white transition-colors"
+                className="tag hover:bg-foreground hover:text-background transition-colors"
                 onClick={onFinish}
               >
                 ← EXIT
@@ -595,32 +595,32 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             <div className={`flashcard-inner ${isRevealed ? 'flipped' : ''}`}>
               {/* 앞면: 한국어 뜻 */}
               <div
-                className="flashcard-front cursor-pointer hover:bg-gray-50 transition-colors"
+                className="flashcard-front cursor-pointer hover:bg-secondary transition-colors"
                 onClick={handleFlip}
               >
-                <div className="border-b border-black px-4 py-2">
-                  <span className="text-xs uppercase tracking-wider text-gray-500">뜻</span>
+                <div className="border-b border-foreground px-4 py-2">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">뜻</span>
                 </div>
                 <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
                   <h2 className="text-2xl sm:text-3xl font-serif font-bold text-center mb-8">
                     {currentWord.korean}
                   </h2>
                   <div className="text-center">
-                    <p className="text-gray-400 uppercase tracking-wider mb-1 text-sm sm:text-base">
+                    <p className="text-muted-foreground uppercase tracking-wider mb-1 text-sm sm:text-base">
                       Tap to flip
                     </p>
-                    <p className="text-xs text-gray-300">SPACE</p>
+                    <p className="text-xs text-muted-foreground/50">SPACE</p>
                   </div>
                 </div>
               </div>
 
               {/* 뒷면: 영어 정답 + 버튼 */}
               <div className="flashcard-back flex flex-col">
-                <div className="border-b border-black px-4 py-2">
-                  <span className="text-xs uppercase tracking-wider text-gray-500">정답</span>
+                <div className="border-b border-foreground px-4 py-2">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">정답</span>
                 </div>
                 <div
-                  className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 cursor-pointer hover:bg-secondary transition-colors"
                   onClick={handleFlip}
                 >
                   <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
@@ -633,7 +633,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                           e.stopPropagation();
                           speak(currentWord.english);
                         }}
-                        className="p-1.5 sm:p-2 border border-black hover:bg-black hover:text-white transition-colors text-sm sm:text-base"
+                        className="p-1.5 sm:p-2 border border-foreground hover:bg-foreground hover:text-background transition-colors text-sm sm:text-base"
                         title="발음 듣기"
                       >
                         🔊
@@ -641,29 +641,29 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                     )}
                   </div>
                   {currentWord.pronunciation && (
-                    <p className="text-gray-500 font-mono text-sm sm:text-base">
+                    <p className="text-muted-foreground font-mono text-sm sm:text-base">
                       {currentWord.pronunciation}
                     </p>
                   )}
                   {currentWord.example && (
-                    <div className="mt-4 px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 max-w-md">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                    <div className="mt-4 px-4 py-2 bg-secondary border border-border max-w-md">
+                      <p className="text-sm text-muted-foreground italic">
                         "{currentWord.example}"
                       </p>
                       {currentWord.exampleKorean && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground/70 mt-1">
                           {currentWord.exampleKorean}
                         </p>
                       )}
                     </div>
                   )}
-                  <p className="text-gray-300 dark:text-gray-600 text-xs mt-4 uppercase tracking-wider">
+                  <p className="text-muted-foreground/50 text-xs mt-4 uppercase tracking-wider">
                     Tap to flip back
                   </p>
                 </div>
-                <div className="grid grid-cols-3 border-t-2 border-black">
+                <div className="grid grid-cols-3 border-t-2 border-foreground">
                   <button
-                    className="py-4 sm:py-6 border-r border-black transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm hover:text-white"
+                    className="py-4 sm:py-6 border-r border-foreground transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm hover:text-white"
                     style={{ backgroundColor: 'var(--accent-error-light)' }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error-light)'}
@@ -675,7 +675,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                     <span className="hidden sm:inline">✕ </span>몰랐다
                   </button>
                   <button
-                    className="py-4 sm:py-6 border-r border-black transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
+                    className="py-4 sm:py-6 border-r border-foreground transition-colors uppercase tracking-wider font-semibold text-xs sm:text-sm"
                     style={{ backgroundColor: 'var(--accent-amber-light)' }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef3c7'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-amber-light)'}
@@ -703,7 +703,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             </div>
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider hidden sm:block">
+          <p className="text-center text-xs text-muted-foreground mt-4 uppercase tracking-wider hidden sm:block">
             {!isRevealed
               ? 'SPACE: Flip'
               : 'SPACE: Flip  |  1/→: 확실함  |  2/↑: 애매함  |  3/←: 몰랐다'
@@ -718,8 +718,8 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
   if (phase === 'typing') {
     if (!currentWord || !isActive) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
-          <p className="text-gray-500 uppercase tracking-wider">Loading...</p>
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <p className="text-muted-foreground uppercase tracking-wider">Loading...</p>
         </div>
       );
     }
@@ -730,12 +730,12 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     const hintInfo = getHint();
 
     return (
-      <div className="min-h-screen bg-white">
-        <header className="border-b-2 border-black">
+      <div className="min-h-screen bg-background">
+        <header className="border-b-2 border-foreground">
           <div className="max-w-2xl mx-auto px-4 py-4">
             <div className="flex justify-between items-center mb-3">
               <button
-                className="tag hover:bg-black hover:text-white transition-colors"
+                className="tag hover:bg-foreground hover:text-background transition-colors"
                 onClick={onFinish}
               >
                 ← EXIT
@@ -762,9 +762,9 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         </header>
 
         <main className="max-w-2xl mx-auto px-4 py-6 sm:py-12">
-          <div className="border-2 border-black">
-            <div className="border-b border-black px-4 py-2">
-              <span className="text-xs uppercase tracking-wider text-gray-500">뜻</span>
+          <div className="border-2 border-foreground">
+            <div className="border-b border-foreground px-4 py-2">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">뜻</span>
             </div>
             <div className="p-4 sm:p-8 text-center">
               <h2 className="text-xl sm:text-2xl font-serif font-bold">{currentWord.korean}</h2>
@@ -773,7 +773,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             {/* 최종 정답/오답 공개 */}
             {isTypingRevealed && (
               <div
-                className="border-t-2 border-black p-4 sm:p-6 text-center"
+                className="border-t-2 border-foreground p-4 sm:p-6 text-center"
                 style={{ backgroundColor: isCorrect ? 'var(--accent-success-light)' : 'var(--accent-error-light)' }}
               >
                 <p
@@ -788,8 +788,8 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
             {/* 힌트 표시 */}
             {!isTypingRevealed && hintInfo && hintInfo.hint && (
-              <div className="border-t border-black p-4 text-center bg-gray-50">
-                <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">
+              <div className="border-t border-foreground p-4 text-center bg-secondary">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
                   Hint ({attemptCount - 1}/{(hintInfo.maxAttempts || 4) - 1})
                 </p>
                 <p className="font-mono text-lg font-bold">
@@ -800,15 +800,15 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
             {/* 재시도 안내 */}
             {!isTypingRevealed && isCorrect === false && attemptCount > 1 && (
-              <div className="border-t border-black p-3 text-center bg-gray-100">
-                <p className="text-sm text-gray-600">
+              <div className="border-t border-foreground p-3 text-center bg-muted">
+                <p className="text-sm text-muted-foreground">
                   오답! 다시 시도 ({attemptCount}/{hintInfo?.maxAttempts || 4})
                 </p>
               </div>
             )}
 
             {/* 입력 폼 */}
-            <form onSubmit={handleSubmitTyping} className="border-t-2 border-black">
+            <form onSubmit={handleSubmitTyping} className="border-t-2 border-foreground">
               <Input
                 ref={inputRef}
                 type="text"
@@ -827,10 +827,10 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
               />
 
               {!isTypingRevealed ? (
-                <div className="grid grid-cols-2 border-t-2 border-black">
+                <div className="grid grid-cols-2 border-t-2 border-foreground">
                   <button
                     type="button"
-                    className="py-4 border-r border-black uppercase tracking-wider font-semibold text-sm transition-colors"
+                    className="py-4 border-r border-foreground uppercase tracking-wider font-semibold text-sm transition-colors"
                     style={{ backgroundColor: 'var(--accent-error-light)' }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-error-light)'}
@@ -840,7 +840,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                   </button>
                   <button
                     type="submit"
-                    className="py-4 bg-black text-white uppercase tracking-wider font-semibold hover:bg-white hover:text-black transition-colors disabled:opacity-50"
+                    className="py-4 bg-foreground text-background uppercase tracking-wider font-semibold hover:bg-background hover:text-foreground transition-colors disabled:opacity-50"
                     disabled={!userInput.trim()}
                   >
                     {attemptCount === 1 ? 'CHECK' : 'TRY AGAIN'}
@@ -849,7 +849,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
               ) : (
                 <button
                   type="button"
-                  className="w-full py-4 border-t-2 border-black bg-black text-white uppercase tracking-wider font-semibold hover:bg-white hover:text-black transition-colors"
+                  className="w-full py-4 border-t-2 border-foreground bg-foreground text-background uppercase tracking-wider font-semibold hover:bg-background hover:text-foreground transition-colors"
                   onClick={handleNextTyping}
                 >
                   {currentIndex >= words.length - 1 ? 'VIEW RESULT →' : 'NEXT →'}
@@ -858,7 +858,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             </form>
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-wider">
+          <p className="text-center text-xs text-muted-foreground mt-4 uppercase tracking-wider">
             {!isTypingRevealed
               ? 'ENTER: 확인  |  ESC: 모름'
               : 'Press ENTER to continue'

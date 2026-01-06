@@ -64,9 +64,9 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* 헤더 */}
-      <header className="border-b-2 border-black">
+      <header className="border-b-2 border-foreground">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <p className="text-sm uppercase tracking-wider text-center">Session Complete</p>
         </div>
@@ -75,34 +75,34 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
       <main className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
         {/* 결과 헤더 */}
         <div className="text-center mb-8 sm:mb-12">
-          <p className="text-sm uppercase tracking-wider text-gray-500 mb-4">Result</p>
+          <p className="text-sm uppercase tracking-wider text-muted-foreground mb-4">Result</p>
           <h1 className="text-3xl sm:text-5xl font-serif font-bold mb-4">{getMessage()}</h1>
           <p className="font-mono text-lg sm:text-xl">{accuracy}%</p>
         </div>
 
         {/* 통계 그리드 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-black mb-8">
-          <div className="p-3 sm:p-4 border-r border-black border-b sm:border-b-0 text-center">
-            <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Total</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-foreground mb-8">
+          <div className="p-3 sm:p-4 border-r border-foreground border-b sm:border-b-0 text-center">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Total</p>
             <p className="text-xl sm:text-2xl font-mono font-bold">{typingAnswers.length}</p>
           </div>
-          <div className="p-3 sm:p-4 sm:border-r border-black border-b sm:border-b-0 text-center">
-            <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Correct</p>
+          <div className="p-3 sm:p-4 sm:border-r border-foreground border-b sm:border-b-0 text-center">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Correct</p>
             <p className="text-xl sm:text-2xl font-mono font-bold">{correctCount}</p>
           </div>
-          <div className="p-3 sm:p-4 border-r border-black text-center">
-            <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Wrong</p>
+          <div className="p-3 sm:p-4 border-r border-foreground text-center">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Wrong</p>
             <p className="text-xl sm:text-2xl font-mono font-bold">{wrongCount}</p>
           </div>
           <div className="p-3 sm:p-4 text-center">
-            <p className="text-xs uppercase tracking-wider text-gray-500 mb-1">Time</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Time</p>
             <p className="text-xl sm:text-2xl font-mono font-bold">{formatTime(totalTime)}</p>
           </div>
         </div>
 
         {/* 다음 복습 일정 */}
-        <div className="border-2 border-black mb-8">
-          <div className="border-b border-black px-4 py-2">
+        <div className="border-2 border-foreground mb-8">
+          <div className="border-b border-foreground px-4 py-2">
             <span className="text-sm uppercase tracking-wider">Next Review</span>
           </div>
           <div className="max-h-[250px] sm:max-h-[300px] overflow-y-auto">
@@ -111,15 +111,15 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
               <div
                 key={`correct-${index}`}
                 className={`flex justify-between items-center px-3 sm:px-4 py-2 sm:py-3 ${
-                  index > 0 ? 'border-t border-gray-200' : ''
+                  index > 0 ? 'border-t border-border' : ''
                 }`}
               >
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <span className="font-mono text-xs sm:text-sm shrink-0" style={{ color: 'var(--accent-success)' }}>○</span>
                   <div className="min-w-0 truncate">
                     <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
-                    <span className="text-gray-400 mx-1 sm:mx-2">—</span>
-                    <span className="text-gray-600 text-sm sm:text-base">{item.word?.korean}</span>
+                    <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
+                    <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
                   </div>
                 </div>
                 <span className="font-mono text-xs sm:text-sm shrink-0 ml-2" style={{ color: 'var(--accent-teal)' }}>
@@ -130,13 +130,13 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
 
             {/* 오답 단어 */}
             {wrongAnswers.length > 0 && correctAnswers.length > 0 && (
-              <div className="border-t-2 border-black" />
+              <div className="border-t-2 border-foreground" />
             )}
             {wrongAnswers.map((item, index) => (
               <div
                 key={`wrong-${index}`}
                 className={`flex justify-between items-center px-3 sm:px-4 py-2 sm:py-3 ${
-                  index > 0 ? 'border-t border-gray-200' : ''
+                  index > 0 ? 'border-t border-border' : ''
                 }`}
                 style={{ backgroundColor: 'var(--accent-error-light)' }}
               >
@@ -144,8 +144,8 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
                   <span className="font-mono text-xs sm:text-sm shrink-0" style={{ color: 'var(--accent-error)' }}>✕</span>
                   <div className="min-w-0 truncate">
                     <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
-                    <span className="text-gray-400 mx-1 sm:mx-2">—</span>
-                    <span className="text-gray-600 text-sm sm:text-base">{item.word?.korean}</span>
+                    <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
+                    <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
                   </div>
                 </div>
                 <span className="font-mono text-xs sm:text-sm shrink-0 ml-2" style={{ color: 'var(--accent-error)' }}>
@@ -157,22 +157,22 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
         </div>
 
         {/* 버튼 */}
-        <div className="grid grid-cols-2 gap-0 border-2 border-black">
+        <div className="grid grid-cols-2 gap-0 border-2 border-foreground">
           <button
-            className="py-4 border-r border-black uppercase tracking-wider font-semibold hover:bg-gray-100 transition-colors"
+            className="py-4 border-r border-foreground uppercase tracking-wider font-semibold hover:bg-secondary transition-colors"
             onClick={handleRetry}
           >
             Retry
           </button>
           <button
-            className="py-4 bg-black text-white uppercase tracking-wider font-semibold hover:bg-white hover:text-black transition-colors"
+            className="py-4 bg-foreground text-background uppercase tracking-wider font-semibold hover:bg-background hover:text-foreground transition-colors"
             onClick={handleHome}
           >
             Home
           </button>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6 uppercase tracking-wider">
+        <p className="text-center text-xs text-muted-foreground mt-6 uppercase tracking-wider">
           SM-2 Algorithm Applied
         </p>
       </main>
