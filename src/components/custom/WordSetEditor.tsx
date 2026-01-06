@@ -16,9 +16,16 @@ import {
 import { extractTextFromImage } from '@/lib/ocr';
 import { extractTextFromPdf, hasSufficientText } from '@/lib/pdf';
 import { extractVocabularyWords } from '@/lib/wordExtractor';
-import { ChevronDown, ChevronRight, Link, FileText, ImageIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, Link, FileText, ImageIcon, Languages } from 'lucide-react';
 
 type ImportTab = 'url' | 'file' | 'image';
+
+// 번역 편집용 단어 타입
+interface WordWithTranslation {
+  english: string;
+  korean: string;
+  isTranslating?: boolean;
+}
 
 interface WordSetEditorProps {
   wordSetId: string;
@@ -49,7 +56,6 @@ export default function WordSetEditor({
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedWords, setExtractedWords] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
-  const [isAddingWords, setIsAddingWords] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
 
   // 파일 가져오기 관련 상태 (JSON + PDF)
@@ -65,7 +71,6 @@ export default function WordSetEditor({
   // PDF 관련 (단어 추출 결과)
   const [pdfExtractedWords, setPdfExtractedWords] = useState<string[]>([]);
   const [pdfSelectedWords, setPdfSelectedWords] = useState<Set<string>>(new Set());
-  const [isAddingPdfWords, setIsAddingPdfWords] = useState(false);
   // 공통
   const [fileError, setFileError] = useState<string | null>(null);
   const [fileWarnings, setFileWarnings] = useState<string[]>([]);
@@ -77,7 +82,13 @@ export default function WordSetEditor({
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [ocrExtractedWords, setOcrExtractedWords] = useState<string[]>([]);
   const [ocrSelectedWords, setOcrSelectedWords] = useState<Set<string>>(new Set());
-  const [isAddingOcrWords, setIsAddingOcrWords] = useState(false);
+
+  // 번역 편집 관련 상태 (공통)
+  const [showTranslationEdit, setShowTranslationEdit] = useState(false);
+  const [translationSource, setTranslationSource] = useState<'url' | 'pdf' | 'ocr' | null>(null);
+  const [wordsWithTranslation, setWordsWithTranslation] = useState<WordWithTranslation[]>([]);
+  const [isAutoTranslating, setIsAutoTranslating] = useState(false);
+  const [isFinalAdding, setIsFinalAdding] = useState(false);
 
   // Store에서 직접 단어장 조회 (실시간 업데이트)
   const customWordSets = useStore((state) => state.customWordSets);
@@ -208,37 +219,146 @@ export default function WordSetEditor({
     }
   };
 
-  // 선택한 단어들 추가
-  const handleAddSelectedWords = async () => {
-    if (selectedWords.size === 0) return;
+  // 번역 편집 화면으로 이동 (URL 탭)
+  const handleGoToTranslationEdit = (source: 'url' | 'pdf' | 'ocr') => {
+    let words: string[] = [];
 
-    setIsAddingWords(true);
+    if (source === 'url') {
+      words = Array.from(selectedWords);
+    } else if (source === 'pdf') {
+      words = Array.from(pdfSelectedWords);
+    } else if (source === 'ocr') {
+      words = Array.from(ocrSelectedWords);
+    }
+
+    if (words.length === 0) return;
+
+    // 번역 편집용 데이터 초기화 (빈 번역으로 시작)
+    const wordsData: WordWithTranslation[] = words.map(english => ({
+      english,
+      korean: '',
+    }));
+
+    setWordsWithTranslation(wordsData);
+    setTranslationSource(source);
+    setShowTranslationEdit(true);
+  };
+
+  // 개별 단어 번역 수정
+  const handleTranslationChange = (index: number, korean: string) => {
+    setWordsWithTranslation(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], korean };
+      return updated;
+    });
+  };
+
+  // 개별 단어 자동 번역
+  const handleAutoTranslateSingle = async (index: number) => {
+    const word = wordsWithTranslation[index];
+
+    setWordsWithTranslation(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], isTranslating: true };
+      return updated;
+    });
 
     try {
-      const wordsToAdd = Array.from(selectedWords);
+      const result = await translateToKorean(word.english);
+      const korean = result.success && result.translation
+        ? result.translation
+        : '(번역 실패)';
 
-      for (const english of wordsToAdd) {
-        // 번역 시도
-        const result = await translateToKorean(english);
-        const korean = result.success && result.translation
-          ? result.translation
-          : '(번역 필요)';
+      setWordsWithTranslation(prev => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], korean, isTranslating: false };
+        return updated;
+      });
+    } catch {
+      setWordsWithTranslation(prev => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], korean: '(번역 실패)', isTranslating: false };
+        return updated;
+      });
+    }
+  };
 
+  // 전체 자동 번역
+  const handleAutoTranslateAll = async () => {
+    setIsAutoTranslating(true);
+
+    const updated = [...wordsWithTranslation];
+
+    for (let i = 0; i < updated.length; i++) {
+      // 이미 번역이 있으면 건너뛰기
+      if (updated[i].korean.trim()) continue;
+
+      try {
+        const result = await translateToKorean(updated[i].english);
+        updated[i] = {
+          ...updated[i],
+          korean: result.success && result.translation ? result.translation : '(번역 필요)',
+        };
+        // 실시간 업데이트
+        setWordsWithTranslation([...updated]);
+      } catch {
+        updated[i] = { ...updated[i], korean: '(번역 필요)' };
+      }
+    }
+
+    setWordsWithTranslation(updated);
+    setIsAutoTranslating(false);
+  };
+
+  // 번역 편집 완료 후 단어 추가
+  const handleFinalAddWords = async () => {
+    if (wordsWithTranslation.length === 0) return;
+
+    setIsFinalAdding(true);
+
+    try {
+      for (const word of wordsWithTranslation) {
         addWordToCustomSet(wordSet.id, {
-          english,
-          korean,
+          english: word.english,
+          korean: word.korean.trim() || '(번역 필요)',
         });
       }
 
-      // 추가 완료 후 초기화
-      setExtractedWords([]);
-      setSelectedWords(new Set());
-      setUrlInput('');
+      // 소스에 따라 상태 초기화
+      if (translationSource === 'url') {
+        setExtractedWords([]);
+        setSelectedWords(new Set());
+        setUrlInput('');
+      } else if (translationSource === 'pdf') {
+        resetFileState();
+      } else if (translationSource === 'ocr') {
+        setOcrExtractedWords([]);
+        setOcrSelectedWords(new Set());
+      }
+
+      // 번역 편집 상태 초기화
+      setShowTranslationEdit(false);
+      setTranslationSource(null);
+      setWordsWithTranslation([]);
     } catch (error) {
-      setExtractError('단어 추가 중 오류가 발생했습니다.');
+      // 에러 처리는 소스에 따라
+      if (translationSource === 'url') {
+        setExtractError('단어 추가 중 오류가 발생했습니다.');
+      } else if (translationSource === 'pdf') {
+        setFileError('단어 추가 중 오류가 발생했습니다.');
+      } else if (translationSource === 'ocr') {
+        setOcrError('단어 추가 중 오류가 발생했습니다.');
+      }
     } finally {
-      setIsAddingWords(false);
+      setIsFinalAdding(false);
     }
+  };
+
+  // 번역 편집 취소
+  const handleCancelTranslationEdit = () => {
+    setShowTranslationEdit(false);
+    setTranslationSource(null);
+    setWordsWithTranslation([]);
   };
 
   // 파일 처리 (JSON + PDF)
@@ -371,35 +491,6 @@ export default function WordSetEditor({
     }
   };
 
-  // PDF에서 단어 추가
-  const handleAddPdfWords = async () => {
-    if (pdfSelectedWords.size === 0) return;
-
-    setIsAddingPdfWords(true);
-
-    try {
-      const wordsToAdd = Array.from(pdfSelectedWords);
-
-      for (const english of wordsToAdd) {
-        const result = await translateToKorean(english);
-        const korean = result.success && result.translation
-          ? result.translation
-          : '(번역 필요)';
-
-        addWordToCustomSet(wordSet!.id, {
-          english,
-          korean,
-        });
-      }
-
-      resetFileState();
-    } catch (error) {
-      setFileError('단어 추가 중 오류가 발생했습니다.');
-    } finally {
-      setIsAddingPdfWords(false);
-    }
-  };
-
   // 파일 상태 초기화
   const resetFileState = () => {
     setFileType(null);
@@ -479,38 +570,6 @@ export default function WordSetEditor({
       setOcrSelectedWords(new Set());
     } else {
       setOcrSelectedWords(new Set(ocrExtractedWords));
-    }
-  };
-
-  // OCR 선택한 단어들 추가
-  const handleAddOcrSelectedWords = async () => {
-    if (ocrSelectedWords.size === 0) return;
-
-    setIsAddingOcrWords(true);
-
-    try {
-      const wordsToAdd = Array.from(ocrSelectedWords);
-
-      for (const english of wordsToAdd) {
-        // 번역 시도
-        const result = await translateToKorean(english);
-        const korean = result.success && result.translation
-          ? result.translation
-          : '(번역 필요)';
-
-        addWordToCustomSet(wordSet!.id, {
-          english,
-          korean,
-        });
-      }
-
-      // 추가 완료 후 초기화
-      setOcrExtractedWords([]);
-      setOcrSelectedWords(new Set());
-    } catch (error) {
-      setOcrError('단어 추가 중 오류가 발생했습니다.');
-    } finally {
-      setIsAddingOcrWords(false);
     }
   };
 
@@ -729,13 +788,11 @@ export default function WordSetEditor({
                     </div>
                     <div className="border-t border-foreground p-4">
                       <button
-                        className="w-full py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors disabled:opacity-50"
-                        onClick={handleAddSelectedWords}
-                        disabled={selectedWords.size === 0 || isAddingWords}
+                        className="w-full py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        onClick={() => handleGoToTranslationEdit('url')}
+                        disabled={selectedWords.size === 0}
                       >
-                        {isAddingWords
-                          ? '추가 중...'
-                          : `선택한 ${selectedWords.size}개 단어 추가`}
+                        다음: 번역 입력 →
                       </button>
                     </div>
                   </>
@@ -944,12 +1001,10 @@ export default function WordSetEditor({
                       </button>
                       <button
                         className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
-                        onClick={handleAddPdfWords}
-                        disabled={pdfSelectedWords.size === 0 || isAddingPdfWords}
+                        onClick={() => handleGoToTranslationEdit('pdf')}
+                        disabled={pdfSelectedWords.size === 0}
                       >
-                        {isAddingPdfWords
-                          ? '추가 중...'
-                          : `선택한 ${pdfSelectedWords.size}개 단어 추가`}
+                        다음: 번역 입력 →
                       </button>
                     </div>
                   </>
@@ -1048,17 +1103,85 @@ export default function WordSetEditor({
                       </button>
                       <button
                         className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
-                        onClick={handleAddOcrSelectedWords}
-                        disabled={ocrSelectedWords.size === 0 || isAddingOcrWords}
+                        onClick={() => handleGoToTranslationEdit('ocr')}
+                        disabled={ocrSelectedWords.size === 0}
                       >
-                        {isAddingOcrWords
-                          ? '추가 중...'
-                          : `선택한 ${ocrSelectedWords.size}개 단어 추가`}
+                        다음: 번역 입력 →
                       </button>
                     </div>
                   </>
                 )}
               </>
+            )}
+
+            {/* 번역 편집 화면 */}
+            {showTranslationEdit && (
+              <div className="border-t-2 border-foreground">
+                <div className="border-b border-foreground px-4 py-3 bg-secondary flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Languages size={18} />
+                    <span className="font-semibold text-sm">번역 입력</span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      ({wordsWithTranslation.length}개)
+                    </span>
+                  </div>
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
+                    onClick={handleAutoTranslateAll}
+                    disabled={isAutoTranslating}
+                  >
+                    {isAutoTranslating ? '번역 중...' : '전체 자동번역'}
+                  </button>
+                </div>
+
+                <div className="max-h-[300px] overflow-y-auto">
+                  {wordsWithTranslation.map((word, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center gap-2 px-4 py-2 ${
+                        index > 0 ? 'border-t border-foreground' : ''
+                      }`}
+                    >
+                      <span className="font-medium text-sm min-w-[100px] sm:min-w-[120px]">
+                        {word.english}
+                      </span>
+                      <Input
+                        placeholder="번역 입력..."
+                        value={word.korean}
+                        onChange={(e) => handleTranslationChange(index, e.target.value)}
+                        className="flex-1 text-sm border border-foreground h-8"
+                        disabled={word.isTranslating}
+                      />
+                      <button
+                        className="tag text-[10px] px-2 py-1 hover:bg-foreground hover:text-background transition-colors disabled:opacity-50"
+                        onClick={() => handleAutoTranslateSingle(index)}
+                        disabled={word.isTranslating}
+                        title="자동 번역"
+                      >
+                        {word.isTranslating ? '...' : '번역'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-foreground p-4 flex gap-2">
+                  <button
+                    className="flex-1 py-3 border-2 border-foreground font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                    onClick={handleCancelTranslationEdit}
+                  >
+                    취소
+                  </button>
+                  <button
+                    className="flex-1 py-3 bg-foreground text-background font-medium tracking-wide hover:bg-background hover:text-foreground border-2 border-foreground transition-colors disabled:opacity-50"
+                    onClick={handleFinalAddWords}
+                    disabled={isFinalAdding}
+                  >
+                    {isFinalAdding
+                      ? '추가 중...'
+                      : `${wordsWithTranslation.length}개 단어 추가`}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
