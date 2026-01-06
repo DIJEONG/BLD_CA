@@ -60,6 +60,10 @@ interface StoreActions {
 
   // 리셋
   resetAll: () => void;
+
+  // 데이터 내보내기/가져오기
+  getFullState: () => AppState;
+  importData: (data: AppState) => void;
 }
 
 const initialState: AppState = {
@@ -380,6 +384,35 @@ export const useStore = create<AppState & StoreActions>()(
 
       resetAll: () => {
         set(initialState);
+      },
+
+      // 전체 상태 가져오기 (내보내기용)
+      getFullState: () => {
+        const state = get();
+        return {
+          profile: state.profile,
+          isOnboarded: state.isOnboarded,
+          wordProgress: state.wordProgress,
+          sessions: state.sessions,
+          dailyStats: state.dailyStats,
+          currentStreak: state.currentStreak,
+          lastStudyDate: state.lastStudyDate,
+          customWordSets: state.customWordSets,
+        };
+      },
+
+      // 데이터 가져오기
+      importData: (data) => {
+        set({
+          profile: data.profile,
+          isOnboarded: data.isOnboarded,
+          wordProgress: data.wordProgress,
+          sessions: data.sessions,
+          dailyStats: data.dailyStats,
+          currentStreak: data.currentStreak,
+          lastStudyDate: data.lastStudyDate,
+          customWordSets: data.customWordSets,
+        });
       },
     }),
     {

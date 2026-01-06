@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { Input } from '@/components/ui/input';
 import AddWordForm from './AddWordForm';
+import { translateToKorean } from '@/lib/translate';
 
 interface WordSetEditorProps {
   wordSetId: string;
@@ -19,6 +20,14 @@ export default function WordSetEditor({
   const [isEditingName, setIsEditingName] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // URL 추출 관련 상태
+  const [urlInput, setUrlInput] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedWords, setExtractedWords] = useState<string[]>([]);
+  const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+  const [isAddingWords, setIsAddingWords] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+
   // Store에서 직접 단어장 조회 (실시간 업데이트)
   const customWordSets = useStore((state) => state.customWordSets);
   const wordSet = customWordSets.find(ws => ws.id === wordSetId);
@@ -28,6 +37,7 @@ export default function WordSetEditor({
   const updateCustomWordSet = useStore((state) => state.updateCustomWordSet);
   const deleteCustomWordSet = useStore((state) => state.deleteCustomWordSet);
   const removeWordFromCustomSet = useStore((state) => state.removeWordFromCustomSet);
+  const addWordToCustomSet = useStore((state) => state.addWordToCustomSet);
 
   // 단어장이 없으면 (삭제된 경우) 돌아가기
   if (!wordSet) {
@@ -49,6 +59,96 @@ export default function WordSetEditor({
 
   const handleRemoveWord = (wordId: string) => {
     removeWordFromCustomSet(wordSet.id, wordId);
+  };
+
+  // URL에서 단어 추출
+  const handleExtractWords = async () => {
+    if (!urlInput.trim()) return;
+
+    setIsExtracting(true);
+    setExtractError(null);
+    setExtractedWords([]);
+    setSelectedWords(new Set());
+
+    try {
+      const response = await fetch('/api/extract-words', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlInput.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        setExtractError(data.error || '단어 추출에 실패했습니다.');
+      } else {
+        // 이미 단어장에 있는 단어 제외
+        const existingWords = new Set(wordSet.words.map(w => w.english.toLowerCase()));
+        const newWords = data.words.filter((w: string) => !existingWords.has(w.toLowerCase()));
+        setExtractedWords(newWords);
+
+        if (newWords.length === 0) {
+          setExtractError('새로 추가할 단어가 없습니다. (이미 있는 단어들입니다)');
+        }
+      }
+    } catch (error) {
+      setExtractError('네트워크 오류가 발생했습니다.');
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  // 단어 선택 토글
+  const toggleWordSelection = (word: string) => {
+    const newSelected = new Set(selectedWords);
+    if (newSelected.has(word)) {
+      newSelected.delete(word);
+    } else {
+      newSelected.add(word);
+    }
+    setSelectedWords(newSelected);
+  };
+
+  // 전체 선택/해제
+  const toggleSelectAll = () => {
+    if (selectedWords.size === extractedWords.length) {
+      setSelectedWords(new Set());
+    } else {
+      setSelectedWords(new Set(extractedWords));
+    }
+  };
+
+  // 선택한 단어들 추가
+  const handleAddSelectedWords = async () => {
+    if (selectedWords.size === 0) return;
+
+    setIsAddingWords(true);
+
+    try {
+      const wordsToAdd = Array.from(selectedWords);
+
+      for (const english of wordsToAdd) {
+        // 번역 시도
+        const result = await translateToKorean(english);
+        const korean = result.success && result.translation
+          ? result.translation
+          : '(번역 필요)';
+
+        addWordToCustomSet(wordSet.id, {
+          english,
+          korean,
+        });
+      }
+
+      // 추가 완료 후 초기화
+      setExtractedWords([]);
+      setSelectedWords(new Set());
+      setUrlInput('');
+    } catch (error) {
+      setExtractError('단어 추가 중 오류가 발생했습니다.');
+    } finally {
+      setIsAddingWords(false);
+    }
   };
 
   return (
@@ -149,9 +249,90 @@ export default function WordSetEditor({
           </button>
         )}
 
+        {/* URL에서 단어 추출 */}
+        <div className="mb-8">
+          <h2 className="section-title">URL에서 단어 추출</h2>
+          <div className="border-2 border-black">
+            <div className="p-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="https://example.com/article"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  className="flex-1 border-2 border-black"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleExtractWords();
+                  }}
+                />
+                <button
+                  className="tag-filled hover:bg-white hover:text-black transition-colors px-4"
+                  onClick={handleExtractWords}
+                  disabled={isExtracting || !urlInput.trim()}
+                >
+                  {isExtracting ? '추출 중...' : '추출'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                뉴스, 블로그 등 영어 페이지 URL을 입력하세요
+              </p>
+            </div>
+
+            {/* 오류 메시지 */}
+            {extractError && (
+              <div className="border-t border-black p-4 bg-red-50">
+                <p className="text-sm text-red-600">{extractError}</p>
+              </div>
+            )}
+
+            {/* 추출된 단어 목록 */}
+            {extractedWords.length > 0 && (
+              <>
+                <div className="border-t border-black p-3 flex justify-between items-center bg-gray-50">
+                  <span className="text-sm">
+                    {extractedWords.length}개 단어 발견 · {selectedWords.size}개 선택
+                  </span>
+                  <button
+                    className="text-xs text-gray-600 hover:text-black"
+                    onClick={toggleSelectAll}
+                  >
+                    {selectedWords.size === extractedWords.length ? '전체 해제' : '전체 선택'}
+                  </button>
+                </div>
+                <div className="border-t border-black max-h-[200px] overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-0">
+                    {extractedWords.map((word, index) => (
+                      <button
+                        key={word}
+                        className={`p-2 text-sm text-left border-b border-r border-black
+                          ${selectedWords.has(word) ? 'bg-black text-white' : 'hover:bg-gray-100'}
+                          ${index % 3 === 2 ? 'border-r-0' : ''}
+                        `}
+                        onClick={() => toggleWordSelection(word)}
+                      >
+                        {word}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="border-t border-black p-4">
+                  <button
+                    className="w-full py-3 bg-black text-white font-medium tracking-wide hover:bg-white hover:text-black hover:border-black transition-colors disabled:opacity-50"
+                    onClick={handleAddSelectedWords}
+                    disabled={selectedWords.size === 0 || isAddingWords}
+                  >
+                    {isAddingWords
+                      ? '추가 중...'
+                      : `선택한 ${selectedWords.size}개 단어 추가`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* 단어 추가 폼 */}
         <div className="mb-8">
-          <h2 className="section-title">새 단어 추가</h2>
+          <h2 className="section-title">직접 단어 추가</h2>
           <AddWordForm wordSetId={wordSet.id} />
         </div>
 

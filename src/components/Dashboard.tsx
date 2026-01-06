@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { allWordSets, getWordSetsByGrade } from '@/data/words';
 import LearningPage from './learning/LearningPage';
 import WordSetEditor from './custom/WordSetEditor';
+import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
 
 export default function Dashboard() {
   const [isLearning, setIsLearning] = useState(false);
@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [editingWordSetId, setEditingWordSetId] = useState<string | null>(null);
   const [isCreatingWordSet, setIsCreatingWordSet] = useState(false);
   const [newWordSetName, setNewWordSetName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const profile = useStore((state) => state.profile);
   const currentStreak = useStore((state) => state.currentStreak);
@@ -25,6 +26,8 @@ export default function Dashboard() {
   const getCustomWordSets = useStore((state) => state.getCustomWordSets);
   const addCustomWordSet = useStore((state) => state.addCustomWordSet);
   const getWrongWordsCount = useStore((state) => state.getWrongWordsCount);
+  const getFullState = useStore((state) => state.getFullState);
+  const importData = useStore((state) => state.importData);
 
   const customWordSets = getCustomWordSets();
   const wrongWordsCount = getWrongWordsCount();
@@ -67,6 +70,35 @@ export default function Dashboard() {
 
   const handleBackFromEditor = () => {
     setEditingWordSetId(null);
+  };
+
+  const handleExport = () => {
+    const state = getFullState();
+    exportDataToJSON(state);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await importDataFromJSON(file);
+      if (confirm('기존 데이터를 덮어쓰시겠습니까?')) {
+        importData(data);
+        alert('데이터를 성공적으로 가져왔습니다.');
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '파일을 가져올 수 없습니다.');
+    }
+
+    // 파일 입력 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // 학습 화면
@@ -437,6 +469,36 @@ export default function Dashboard() {
           )}
         </section>
       </main>
+
+      {/* 데이터 관리 */}
+      <section className="max-w-4xl mx-auto px-4 mt-12">
+        <div className="border-2 border-black">
+          <div className="border-b border-black px-4 py-2">
+            <span className="text-sm uppercase tracking-wider">데이터 관리</span>
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-black">
+            <button
+              className="py-4 tracking-wider text-sm hover:bg-black hover:text-white transition-colors"
+              onClick={handleExport}
+            >
+              내보내기
+            </button>
+            <button
+              className="py-4 tracking-wider text-sm hover:bg-black hover:text-white transition-colors"
+              onClick={handleImportClick}
+            >
+              가져오기
+            </button>
+          </div>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImportFile}
+          className="hidden"
+        />
+      </section>
 
       {/* 푸터 */}
       <footer className="border-t-2 border-black mt-16">

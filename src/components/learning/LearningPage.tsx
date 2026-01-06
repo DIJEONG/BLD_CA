@@ -142,6 +142,23 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     setPhase('flashcard');
   };
 
+  // 다른 단어로 섞기
+  const handleShuffleWords = () => {
+    if (!wordSet || wrongWordsMode) return;
+
+    const reviewProgress = getWordsForReview();
+    const reviewWordIdsArray = reviewProgress.map(p => p.wordId);
+    const reviewWords = getWordsByIds(reviewWordIdsArray);
+
+    // 복습 단어 제외한 나머지에서 랜덤 선택
+    const availableWords = wordSet.words.filter(w => !reviewWordIdsArray.includes(w.id));
+    const shuffled = [...availableWords].sort(() => Math.random() - 0.5);
+    const remainingCount = Math.max(0, dailyGoal - reviewWords.length);
+    const newWords = shuffled.slice(0, remainingCount);
+
+    setPreviewWords([...reviewWords, ...newWords]);
+  };
+
   const handleStartTyping = () => {
     startTypingPhase();
     setPhase('typing');
@@ -289,8 +306,16 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
           {/* 단어 목록 */}
           <div className="border-2 border-black mb-8">
-            <div className="border-b border-black px-4 py-2">
+            <div className="border-b border-black px-4 py-2 flex justify-between items-center">
               <span className="text-sm uppercase tracking-wider">Word List</span>
+              {!wrongWordsMode && wordSet && wordSet.words.length > dailyGoal && (
+                <button
+                  className="text-xs uppercase tracking-wider text-gray-500 hover:text-black transition-colors"
+                  onClick={handleShuffleWords}
+                >
+                  다른 단어 ↻
+                </button>
+              )}
             </div>
             <div className="max-h-[350px] overflow-y-auto">
               {previewWords.map((word, index) => {
