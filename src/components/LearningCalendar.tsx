@@ -5,17 +5,37 @@ import { useStore } from '@/store/useStore';
 import { getTodayString, getCanadaDate } from '@/lib/date';
 
 export default function LearningCalendar() {
-  const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [today, setToday] = useState('');
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
+  const [today, setToday] = useState<string | null>(null);
 
   // 클라이언트에서만 캐나다 시간대 적용
   useEffect(() => {
-    setCurrentDate(getCanadaDate());
-    setToday(getTodayString());
+    const now = new Date();
+    const canadaOptions: Intl.DateTimeFormatOptions = {
+      timeZone: 'America/Toronto',
+    };
+
+    // 캐나다 시간대 기준 오늘 날짜
+    const todayStr = now.toLocaleDateString('en-CA', canadaOptions);
+    setToday(todayStr);
+
+    // 캐나다 시간대 기준 현재 Date 객체
+    const canadaDateStr = now.toLocaleString('en-US', canadaOptions);
+    setCurrentDate(new Date(canadaDateStr));
   }, []);
+
   const getMonthlyStats = useStore((state) => state.getMonthlyStats);
   const profile = useStore((state) => state.profile);
   const dailyGoal = profile?.dailyWordCount || 20;
+
+  // 클라이언트 마운트 전에는 로딩 표시
+  if (!currentDate || !today) {
+    return (
+      <div className="border-2 border-black p-8 text-center">
+        <p className="text-gray-400 text-sm">Loading calendar...</p>
+      </div>
+    );
+  }
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1; // 1-indexed

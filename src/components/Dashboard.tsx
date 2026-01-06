@@ -18,20 +18,30 @@ export default function Dashboard() {
   const [editingWordSetId, setEditingWordSetId] = useState<string | null>(null);
   const [isCreatingWordSet, setIsCreatingWordSet] = useState(false);
   const [newWordSetName, setNewWordSetName] = useState('');
-  const [dateStr, setDateStr] = useState('');
-  const [todayString, setTodayString] = useState('');
+  const [dateStr, setDateStr] = useState<string | null>(null);
+  const [todayString, setTodayString] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 클라이언트에서만 캐나다 시간대 적용
   useEffect(() => {
-    const today = getCanadaDate();
-    setDateStr(today.toLocaleDateString('ko-KR', {
+    // 강제로 클라이언트 시간 사용
+    const now = new Date();
+    const canadaOptions: Intl.DateTimeFormatOptions = {
+      timeZone: 'America/Toronto',
+    };
+
+    // 캐나다 시간대의 날짜 문자열
+    const canadaDateStr = now.toLocaleDateString('en-CA', canadaOptions);
+    setTodayString(canadaDateStr);
+
+    // 한국어 형식 날짜
+    setDateStr(now.toLocaleDateString('ko-KR', {
+      ...canadaOptions,
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       weekday: 'long',
     }));
-    setTodayString(getTodayString());
   }, []);
 
   const profile = useStore((state) => state.profile);
