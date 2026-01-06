@@ -29,10 +29,20 @@ export type LeitnerBox = 1 | 2 | 3 | 4 | 5;
 // 확신도 타입
 export type Confidence = 'sure' | 'unsure';
 
-// 단어별 학습 진도 (Leitner System)
+// SM-2 응답 품질 (0-5)
+export type SM2Quality = 0 | 1 | 2 | 3 | 4 | 5;
+
+// 단어별 학습 진도 (SM-2 알고리즘 + Leitner 호환)
 export interface WordProgress {
   wordId: string;
-  box: LeitnerBox;              // Leitner Box (1~5)
+  box: LeitnerBox;              // Leitner Box (1~5) - 하위 호환
+
+  // SM-2 알고리즘 필드
+  easeFactor: number;           // 난이도 계수 (2.5 기본, 1.3 최소)
+  interval: number;             // 현재 복습 간격 (일)
+  repetitionCount: number;      // 연속 정답 횟수
+
+  // 기존 필드
   nextReviewDate: string;       // 다음 복습일 (YYYY-MM-DD)
   lastStudiedAt: string;        // 마지막 학습일
   attemptCount: number;         // 총 시도 횟수

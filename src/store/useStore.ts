@@ -8,13 +8,16 @@ import {
   WordProgress,
   LearningSession,
   DailyStats,
-  LeitnerBox,
-  LEITNER_INTERVALS,
-  LEITNER_INTERVALS_UNSURE,
   Confidence,
   CustomWordSet,
   Word,
 } from '@/types';
+import {
+  calculateSM2,
+  mapResponseToQuality,
+  efToLeitnerBox,
+  SM2_DEFAULTS,
+} from '@/lib/sm2';
 
 interface StoreActions {
   // 온보딩
@@ -83,15 +86,6 @@ function getDaysDiff(date1: string, date2: string): number {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
-// 다음 복습일 계산 (Leitner) - 확신도에 따라 간격 조절
-function getNextReviewDate(box: LeitnerBox, confidence: Confidence = 'sure'): string {
-  const today = new Date();
-  const intervals = confidence === 'unsure' ? LEITNER_INTERVALS_UNSURE : LEITNER_INTERVALS;
-  const daysToAdd = intervals[box];
-  today.setDate(today.getDate() + daysToAdd);
-  return today.toISOString().split('T')[0];
-}
-
 export const useStore = create<AppState & StoreActions>()(
   persist(
     (set, get) => ({
@@ -108,12 +102,17 @@ export const useStore = create<AppState & StoreActions>()(
         }
       },
 
-      // 새 단어 초기화 (Box 1, 오늘 복습)
+      // 새 단어 초기화 (SM-2 기본값)
       initWordProgress: (wordId) => {
         const today = getTodayString();
         const newProgress: WordProgress = {
           wordId,
           box: 1,
+          // SM-2 기본값
+          easeFactor: SM2_DEFAULTS.EASE_FACTOR,
+          interval: SM2_DEFAULTS.FIRST_INTERVAL,
+          repetitionCount: 0,
+          // 기존 필드
           nextReviewDate: today,
           lastStudiedAt: '',
           attemptCount: 0,
@@ -123,23 +122,33 @@ export const useStore = create<AppState & StoreActions>()(
         return newProgress;
       },
 
-      // Leitner 시스템으로 단어 진도 업데이트
+      // SM-2 알고리즘으로 단어 진도 업데이트
       updateWordProgress: (wordId, knew, confidence = 'sure') => {
         const current = get().wordProgress[wordId] || get().initWordProgress(wordId);
 
-        let newBox: LeitnerBox;
-        if (knew) {
-          // 알았다: 다음 Box로 승급 (최대 5)
-          newBox = Math.min(current.box + 1, 5) as LeitnerBox;
-        } else {
-          // 몰랐다: Box 1로 강등
-          newBox = 1;
-        }
+        // SM-2 품질 점수로 변환
+        const quality = mapResponseToQuality(knew, confidence);
+
+        // SM-2 계산
+        const sm2Result = calculateSM2({
+          quality,
+          easeFactor: current.easeFactor ?? SM2_DEFAULTS.EASE_FACTOR,
+          interval: current.interval ?? SM2_DEFAULTS.FIRST_INTERVAL,
+          repetitionCount: current.repetitionCount ?? 0,
+        });
+
+        // Leitner Box 호환 (하위 호환)
+        const newBox = efToLeitnerBox(sm2Result.easeFactor, sm2Result.repetitionCount);
 
         const updated: WordProgress = {
           wordId,
           box: newBox,
-          nextReviewDate: getNextReviewDate(newBox, knew ? confidence : 'sure'),
+          // SM-2 결과
+          easeFactor: sm2Result.easeFactor,
+          interval: sm2Result.interval,
+          repetitionCount: sm2Result.repetitionCount,
+          nextReviewDate: sm2Result.nextReviewDate,
+          // 기존 필드
           lastStudiedAt: new Date().toISOString(),
           attemptCount: current.attemptCount + 1,
           correctCount: current.correctCount + (knew ? 1 : 0),
