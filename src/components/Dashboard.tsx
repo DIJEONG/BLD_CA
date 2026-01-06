@@ -28,6 +28,9 @@ export default function Dashboard() {
   const [newWordSetName, setNewWordSetName] = useState('');
   const [dateStr, setDateStr] = useState<string | null>(null);
   const [todayString, setTodayString] = useState<string | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isOtherWordSetsOpen, setIsOtherWordSetsOpen] = useState(false);
+  const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { theme, toggleTheme } = useTheme();
 
@@ -221,456 +224,504 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* 환영 메시지 */}
-        <div className="border-b border-foreground pb-6 mb-8">
-          <p className="text-sm uppercase tracking-wider text-muted-foreground mb-2">
-            Welcome back
-          </p>
-          <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4">
-            {profile?.nickname}님, 오늘도 학습해볼까요?
-          </h2>
-          {currentStreak > 0 && (
-            <span className="tag-teal">
-              {currentStreak}일 연속 학습 중
-            </span>
-          )}
-        </div>
+        {/* ═══════════════════════════════════════════════════════════════
+            TODAY ZONE - 오늘의 미션
+        ═══════════════════════════════════════════════════════════════ */}
+        <section className="mb-10">
+          {/* 헤더 */}
+          <div className="border-b border-foreground pb-4 mb-6">
+            <p className="text-sm uppercase tracking-wider text-muted-foreground mb-1">
+              Today's Mission
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold">
+              {profile?.nickname}님, 오늘의 미션
+            </h2>
+          </div>
 
-        {/* 학습 플랜 섹션 */}
-        {activeStudyPlan ? (
-          <div className="border-2 border-foreground mb-8">
-            {(() => {
-              const progress = getPlanProgress();
-              const plan = getPlanById(activeStudyPlan.planId);
-              const todayWords = getTodayPlanWords();
-              if (!progress || !plan) return null;
-
-              const isCompleted = progress.completedWords >= progress.totalWords;
-
-              return (
-                <>
-                  <div className="border-b border-foreground px-4 py-3 bg-secondary flex items-center justify-between">
+          {/* 미션 카드들 */}
+          <div className="space-y-3">
+            {/* 1. 오답 복습 (최우선) */}
+            {wrongWordsCount > 0 && (
+              <div
+                className="border-2 p-4 cursor-pointer hover:opacity-90 transition-opacity"
+                style={{ borderColor: 'var(--accent-error)', backgroundColor: 'var(--accent-error-light)' }}
+                onClick={handleStartWrongWordsReview}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">❌</span>
                     <div>
-                      <h3 className="font-serif font-bold">{plan.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Day {progress.currentDay}/{progress.totalDays} · {progress.completedWords}/{progress.totalWords} 단어 완료
+                      <p className="font-semibold" style={{ color: 'var(--accent-error)' }}>
+                        틀린 단어 {wrongWordsCount}개 복습하기
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        우선 복습이 필요해요
                       </p>
                     </div>
-                    <button
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => {
-                        if (confirm('플랜을 취소하시겠습니까? 진행 상황은 유지됩니다.')) {
-                          cancelStudyPlan();
-                        }
-                      }}
-                    >
-                      취소
-                    </button>
                   </div>
-                  <div className="p-4">
-                    {/* 진행률 바 */}
-                    <div className="mb-4">
+                  <span className="tag-error">시작 →</span>
+                </div>
+              </div>
+            )}
+
+            {/* 2. 플랜 학습 또는 추천 학습 */}
+            {activeStudyPlan ? (
+              (() => {
+                const progress = getPlanProgress();
+                const plan = getPlanById(activeStudyPlan.planId);
+                const todayWords = getTodayPlanWords();
+                if (!progress || !plan) return null;
+
+                const isCompleted = progress.completedWords >= progress.totalWords;
+                const todayDone = todayWords.length === 0 && !isCompleted;
+
+                return (
+                  <div className="border-2 border-foreground">
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">📖</span>
+                          <div>
+                            <p className="font-semibold">{plan.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Day {progress.currentDay}/{progress.totalDays} · {progress.completedWords}/{progress.totalWords} 단어
+                            </p>
+                          </div>
+                        </div>
+                        {!isCompleted && todayWords.length > 0 && (
+                          <button
+                            className="tag-teal hover:opacity-80 transition-opacity"
+                            onClick={handleStartPlanLearning}
+                          >
+                            {todayWords.length}단어 학습 →
+                          </button>
+                        )}
+                        {isCompleted && (
+                          <span className="tag-teal">완료!</span>
+                        )}
+                        {todayDone && (
+                          <span className="tag">오늘 완료</span>
+                        )}
+                      </div>
+                      {/* 플랜 진행률 */}
                       <div className="progress-editorial">
                         <div
                           className="progress-editorial-bar"
                           style={{ width: `${progress.percentage}%` }}
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground text-right mt-1 font-mono">
-                        {Math.round(progress.percentage)}%
-                      </p>
-                    </div>
-
-                    {/* 오늘 학습 버튼 */}
-                    {isCompleted ? (
-                      <div className="text-center py-4">
-                        <p className="font-serif text-lg font-bold mb-2" style={{ color: 'var(--accent-teal)' }}>
-                          플랜 완료!
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          축하합니다! 모든 단어를 학습했습니다.
-                        </p>
-                      </div>
-                    ) : todayWords.length > 0 ? (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">오늘의 학습</p>
-                          <p className="text-sm text-muted-foreground">
-                            {todayWords.length}단어 남음
-                          </p>
-                        </div>
+                      <div className="flex justify-between mt-1">
                         <button
-                          className="tag-teal hover:opacity-80 transition-opacity"
-                          onClick={handleStartPlanLearning}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => {
+                            if (confirm('플랜을 취소하시겠습니까?')) {
+                              cancelStudyPlan();
+                            }
+                          }}
                         >
-                          학습 시작 →
+                          플랜 취소
                         </button>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="font-semibold mb-1">오늘 학습 완료!</p>
-                        <p className="text-sm text-muted-foreground">
-                          내일 다시 만나요
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        ) : (
-          <div className="mb-8">
-            <StudyPlanSelector onPlanStart={() => {}} />
-          </div>
-        )}
-
-        {/* 통계 그리드 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-foreground mb-8">
-          <div className="p-3 sm:p-4 border-r border-foreground border-b sm:border-b-0">
-            <p className="data-label">오늘 학습</p>
-            <p className="data-value font-mono">
-              {todayStats?.wordsStudied || 0}/{dailyGoal}
-            </p>
-          </div>
-          <div className="p-3 sm:p-4 sm:border-r border-foreground border-b sm:border-b-0">
-            <p className="data-label">정답</p>
-            <p className="data-value font-mono">
-              {todayStats?.correctCount || 0}
-            </p>
-          </div>
-          <div className="p-3 sm:p-4 border-r border-foreground">
-            <p className="data-label">오답</p>
-            <p className="data-value font-mono">
-              {todayStats?.wrongCount || 0}
-            </p>
-          </div>
-          <div className="p-3 sm:p-4">
-            <p className="data-label">정답률</p>
-            <p className="data-value font-mono">
-              {todayStats && (todayStats.correctCount + todayStats.wrongCount) > 0
-                ? Math.round((todayStats.correctCount / (todayStats.correctCount + todayStats.wrongCount)) * 100)
-                : 0}%
-            </p>
-          </div>
-        </div>
-
-        {/* 진행률 */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm uppercase tracking-wider">Progress</span>
-            <span className="font-mono text-sm">{Math.round(todayProgress)}%</span>
-          </div>
-          <div className="progress-editorial">
-            <div
-              className="progress-editorial-bar"
-              style={{ width: `${todayProgress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* 오답 복습 섹션 */}
-        {wrongWordsCount > 0 && (
-          <div className="border-2 mb-8" style={{ borderColor: 'var(--accent-error)' }}>
-            <div className="px-4 py-2" style={{ borderBottom: '1px solid var(--accent-error)', backgroundColor: 'var(--accent-error-light)' }}>
-              <span className="text-sm uppercase tracking-wider" style={{ color: 'var(--accent-error)' }}>틀린 단어 복습</span>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-serif text-xl font-bold mb-1" style={{ color: 'var(--accent-error)' }}>
-                    {wrongWordsCount}개 단어
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    틀린 단어를 집중적으로 복습해보세요
-                  </p>
-                </div>
-                <button
-                  className="tag-error hover:opacity-80 transition-opacity"
-                  onClick={handleStartWrongWordsReview}
-                >
-                  오답 복습 →
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 주간 통계 */}
-        <div className="border-2 border-foreground mb-8">
-          <div className="border-b border-foreground px-4 py-2">
-            <span className="text-sm uppercase tracking-wider">Weekly Activity</span>
-          </div>
-          {(() => {
-            const totalWeeklyWords = weeklyStats.reduce((sum, s) => sum + s.wordsStudied, 0);
-            const hasAnyActivity = totalWeeklyWords > 0;
-
-            return (
-              <div className="relative">
-                {/* 활동 없을 때 동기부여 메시지 */}
-                {!hasAnyActivity && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/90 z-10">
-                    <div className="text-center px-4">
-                      <p className="font-serif text-lg font-bold mb-1">
-                        첫 학습을 시작해보세요
-                      </p>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                        Start your journey today
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-7 h-24 sm:h-28">
-                  {weeklyStats.map((stat, i) => {
-                    const height = stat.wordsStudied > 0
-                      ? Math.max((stat.wordsStudied / dailyGoal) * 100, 10)
-                      : 0;
-                    const day = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][new Date(stat.date).getDay()];
-                    const isToday = stat.date === todayString;
-
-                    return (
-                      <div
-                        key={i}
-                        className={`flex flex-col items-center justify-end p-1 sm:p-2 ${
-                          i < 6 ? 'border-r border-foreground' : ''
-                        }`}
-                      >
-                        {/* 학습 기록 있으면 막대, 없으면 점선 */}
-                        {stat.wordsStudied > 0 ? (
-                          <div
-                            className="w-full"
-                            style={{
-                              height: `${Math.min(height, 100)}%`,
-                              backgroundColor: isToday ? 'var(--accent-teal)' : '#a3a3a3'
-                            }}
-                          />
-                        ) : (
-                          <div className="flex-1 flex items-end justify-center pb-1">
-                            <div
-                              className="w-1.5 h-1.5"
-                              style={{
-                                backgroundColor: isToday ? 'var(--accent-teal)' : 'transparent',
-                                border: isToday ? 'none' : '1px solid #d4d4d4'
-                              }}
-                            />
-                          </div>
-                        )}
-                        <span
-                          className={`text-[10px] sm:text-xs mt-1 font-mono ${isToday ? 'font-bold' : 'text-muted-foreground'}`}
-                          style={{ color: isToday ? 'var(--accent-teal)' : undefined }}
-                        >
-                          {day}
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {Math.round(progress.percentage)}%
                         </span>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* 월별 달력 */}
-        <div className="mb-8">
-          <LearningCalendar />
-        </div>
-
-        {/* 단어장 목록 */}
-        <section className="mb-8">
-          <h3 className="section-title">단어장</h3>
-          <div className="space-y-0">
-            {recommendedWordSets.map((wordSet, index) => (
-              <div
-                key={wordSet.id}
-                className={`flex justify-between items-center p-4 border-2 border-foreground ${
-                  index > 0 ? 'border-t-0' : ''
-                } hover:bg-foreground hover:text-background transition-colors cursor-pointer group`}
-                onClick={() => handleStartLearning(wordSet.id)}
-              >
-                <div>
-                  <h4 className="font-semibold">{wordSet.name}</h4>
-                  <p className="text-sm text-muted-foreground group-hover:text-gray-300 dark:group-hover:text-gray-600 font-mono">
-                    {wordSet.words.length} WORDS
-                  </p>
-                </div>
-                <span className="tag group-hover:bg-background group-hover:text-foreground">
-                  START →
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* 다른 단어장 */}
-          {recommendedWordSets.length < allWordSets.length && (
-            <div className="mt-6">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
-                Other Collections
-              </p>
-              <div className="space-y-0">
-                {allWordSets
-                  .filter((ws) => !recommendedWordSets.includes(ws))
-                  .map((wordSet, index) => (
-                    <div
-                      key={wordSet.id}
-                      className={`flex justify-between items-center p-4 border border-foreground ${
-                        index > 0 ? 'border-t-0' : ''
-                      } hover:bg-foreground hover:text-background transition-colors cursor-pointer group opacity-60 hover:opacity-100`}
-                      onClick={() => handleStartLearning(wordSet.id)}
-                    >
-                      <div>
-                        <h4 className="font-semibold">{wordSet.name}</h4>
-                        <p className="text-sm text-muted-foreground group-hover:text-gray-300 dark:group-hover:text-gray-600 font-mono">
-                          {wordSet.words.length} WORDS
-                        </p>
-                      </div>
-                      <span className="tag group-hover:bg-background group-hover:text-foreground">
-                        START →
-                      </span>
                     </div>
-                  ))}
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="border-2 border-foreground p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🎯</span>
+                    <div>
+                      <p className="font-semibold">학습 플랜 시작하기</p>
+                      <p className="text-sm text-muted-foreground">
+                        체계적인 학습을 위한 플랜을 선택하세요
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <StudyPlanSelector onPlanStart={() => {}} />
+                </div>
               </div>
-            </div>
-          )}
-        </section>
+            )}
 
-        {/* 커스텀 단어장 */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-serif font-bold">내 단어장</h3>
-            {!isCreatingWordSet && (
-              <button
-                className="tag hover:bg-black hover:text-white transition-colors"
-                onClick={() => setIsCreatingWordSet(true)}
+            {/* 3. 빠른 학습 (플랜 없을 때만 or 플랜 완료 후) */}
+            {recommendedWordSets.length > 0 && (
+              <div
+                className="border-2 border-foreground p-4 cursor-pointer hover:bg-foreground hover:text-background transition-colors group"
+                onClick={() => handleStartLearning(recommendedWordSets[0].id)}
               >
-                + NEW
-              </button>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⚡</span>
+                    <div>
+                      <p className="font-semibold">빠른 학습</p>
+                      <p className="text-sm text-muted-foreground group-hover:text-gray-300">
+                        {recommendedWordSets[0].name} ({recommendedWordSets[0].words.length}단어)
+                      </p>
+                    </div>
+                  </div>
+                  <span className="tag group-hover:bg-background group-hover:text-foreground">시작 →</span>
+                </div>
+              </div>
             )}
           </div>
 
-          {/* 새 단어장 만들기 폼 */}
-          {isCreatingWordSet && (
-            <div className="border-2 border-foreground p-4 mb-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="단어장 이름"
-                  value={newWordSetName}
-                  onChange={(e) => setNewWordSetName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreateWordSet();
-                    if (e.key === 'Escape') {
-                      setIsCreatingWordSet(false);
-                      setNewWordSetName('');
-                    }
-                  }}
-                  className="flex-1 border-2 border-foreground"
-                  autoFocus
-                />
-                <Button
-                  onClick={handleCreateWordSet}
-                  disabled={!newWordSetName.trim()}
-                  className="btn-editorial-filled"
-                >
-                  CREATE
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setIsCreatingWordSet(false);
-                    setNewWordSetName('');
-                  }}
-                  className="btn-editorial"
-                >
-                  CANCEL
-                </Button>
-              </div>
+          {/* 오늘 통계 요약 */}
+          <div className="mt-6 p-4 bg-secondary border border-foreground">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm uppercase tracking-wider">오늘 학습</span>
+              <span className="font-mono font-bold" style={{ color: todayProgress >= 100 ? 'var(--accent-teal)' : undefined }}>
+                {todayStats?.wordsStudied || 0}/{dailyGoal} 단어
+              </span>
             </div>
-          )}
+            <div className="progress-editorial mb-2">
+              <div
+                className="progress-editorial-bar"
+                style={{ width: `${todayProgress}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>정답 {todayStats?.correctCount || 0} · 오답 {todayStats?.wrongCount || 0}</span>
+              <span>
+                정답률 {todayStats && (todayStats.correctCount + todayStats.wrongCount) > 0
+                  ? Math.round((todayStats.correctCount / (todayStats.correctCount + todayStats.wrongCount)) * 100)
+                  : 0}%
+              </span>
+            </div>
+          </div>
+        </section>
 
-          {/* 커스텀 단어장 목록 */}
-          {customWordSets.length === 0 && !isCreatingWordSet ? (
-            <div className="border-2 border-dashed border-foreground p-8 text-center">
-              <p className="text-muted-foreground mb-2">아직 내 단어장이 없습니다</p>
-              <p className="text-sm text-muted-foreground mb-4">
-                오늘 학습하고 싶은 단어를 직접 추가해보세요
-              </p>
-              <button
-                className="tag hover:bg-foreground hover:text-background transition-colors"
-                onClick={() => setIsCreatingWordSet(true)}
-              >
-                + 첫 단어장 만들기
-              </button>
+        {/* ═══════════════════════════════════════════════════════════════
+            PROGRESS ZONE - 나의 성장
+        ═══════════════════════════════════════════════════════════════ */}
+        <section className="mb-10">
+          <div className="border-b border-foreground pb-4 mb-6">
+            <p className="text-sm uppercase tracking-wider text-muted-foreground mb-1">
+              My Progress
+            </p>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold">나의 성장</h2>
+              {currentStreak > 0 && (
+                <span className="tag-teal">{currentStreak}일 연속</span>
+              )}
             </div>
-          ) : (
+          </div>
+
+          {/* 주간 활동 차트 */}
+          <div className="border-2 border-foreground mb-4">
+            <div className="border-b border-foreground px-4 py-2">
+              <span className="text-sm uppercase tracking-wider">Weekly Activity</span>
+            </div>
+            {(() => {
+              const totalWeeklyWords = weeklyStats.reduce((sum, s) => sum + s.wordsStudied, 0);
+              const hasAnyActivity = totalWeeklyWords > 0;
+
+              return (
+                <div className="relative">
+                  {!hasAnyActivity && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/90 z-10">
+                      <div className="text-center px-4">
+                        <p className="font-serif text-lg font-bold mb-1">
+                          첫 학습을 시작해보세요
+                        </p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                          Start your journey today
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-7 h-24 sm:h-28">
+                    {weeklyStats.map((stat, i) => {
+                      const height = stat.wordsStudied > 0
+                        ? Math.max((stat.wordsStudied / dailyGoal) * 100, 10)
+                        : 0;
+                      const day = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][new Date(stat.date).getDay()];
+                      const isToday = stat.date === todayString;
+
+                      return (
+                        <div
+                          key={i}
+                          className={`flex flex-col items-center justify-end p-1 sm:p-2 ${
+                            i < 6 ? 'border-r border-foreground' : ''
+                          }`}
+                        >
+                          {stat.wordsStudied > 0 ? (
+                            <div
+                              className="w-full"
+                              style={{
+                                height: `${Math.min(height, 100)}%`,
+                                backgroundColor: isToday ? 'var(--accent-teal)' : '#a3a3a3'
+                              }}
+                            />
+                          ) : (
+                            <div className="flex-1 flex items-end justify-center pb-1">
+                              <div
+                                className="w-1.5 h-1.5"
+                                style={{
+                                  backgroundColor: isToday ? 'var(--accent-teal)' : 'transparent',
+                                  border: isToday ? 'none' : '1px solid #d4d4d4'
+                                }}
+                              />
+                            </div>
+                          )}
+                          <span
+                            className={`text-[10px] sm:text-xs mt-1 font-mono ${isToday ? 'font-bold' : 'text-muted-foreground'}`}
+                            style={{ color: isToday ? 'var(--accent-teal)' : undefined }}
+                          >
+                            {day}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* 월별 달력 (접힘/펼침) */}
+          <div className="border-2 border-foreground">
+            <button
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-secondary transition-colors"
+              onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+            >
+              <span className="text-sm uppercase tracking-wider">Monthly Calendar</span>
+              <span className="text-muted-foreground">{isCalendarOpen ? '▲' : '▼'}</span>
+            </button>
+            {isCalendarOpen && (
+              <div className="border-t border-foreground">
+                <LearningCalendar />
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            LIBRARY ZONE - 단어장
+        ═══════════════════════════════════════════════════════════════ */}
+        <section className="mb-10">
+          <div className="border-b border-foreground pb-4 mb-6">
+            <p className="text-sm uppercase tracking-wider text-muted-foreground mb-1">
+              Word Library
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold">단어장</h2>
+          </div>
+
+          {/* 추천 단어장 */}
+          <div className="mb-6">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
+              추천 단어장
+            </p>
             <div className="space-y-0">
-              {customWordSets.map((wordSet, index) => (
+              {recommendedWordSets.map((wordSet, index) => (
                 <div
                   key={wordSet.id}
-                  className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border-2 border-foreground ${
+                  className={`flex justify-between items-center p-4 border-2 border-foreground ${
                     index > 0 ? 'border-t-0' : ''
-                  }`}
+                  } hover:bg-foreground hover:text-background transition-colors cursor-pointer group`}
+                  onClick={() => handleStartLearning(wordSet.id)}
                 >
-                  <div className="mb-2 sm:mb-0">
+                  <div>
                     <h4 className="font-semibold">{wordSet.name}</h4>
-                    <p className="text-sm text-muted-foreground font-mono">
+                    <p className="text-sm text-muted-foreground group-hover:text-gray-300 dark:group-hover:text-gray-600 font-mono">
                       {wordSet.words.length} WORDS
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="tag hover:bg-foreground hover:text-background transition-colors"
-                      onClick={() => handleEditWordSet(wordSet.id)}
-                    >
-                      EDIT
-                    </button>
-                    {wordSet.words.length > 0 && (
-                      <button
-                        className="tag-filled hover:bg-background hover:text-foreground transition-colors"
-                        onClick={() => handleStartLearning(wordSet.id)}
-                      >
-                        START →
-                      </button>
-                    )}
-                  </div>
+                  <span className="tag group-hover:bg-background group-hover:text-foreground">
+                    START →
+                  </span>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* 다른 단어장 (접힘/펼침) */}
+          {recommendedWordSets.length < allWordSets.length && (
+            <div className="mb-6">
+              <button
+                className="w-full py-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2"
+                onClick={() => setIsOtherWordSetsOpen(!isOtherWordSetsOpen)}
+              >
+                다른 단어장 보기 ({allWordSets.length - recommendedWordSets.length}개)
+                <span>{isOtherWordSetsOpen ? '▲' : '▼'}</span>
+              </button>
+              {isOtherWordSetsOpen && (
+                <div className="mt-3 space-y-0">
+                  {allWordSets
+                    .filter((ws) => !recommendedWordSets.includes(ws))
+                    .map((wordSet, index) => (
+                      <div
+                        key={wordSet.id}
+                        className={`flex justify-between items-center p-4 border border-foreground ${
+                          index > 0 ? 'border-t-0' : ''
+                        } hover:bg-foreground hover:text-background transition-colors cursor-pointer group opacity-70 hover:opacity-100`}
+                        onClick={() => handleStartLearning(wordSet.id)}
+                      >
+                        <div>
+                          <h4 className="font-semibold">{wordSet.name}</h4>
+                          <p className="text-sm text-muted-foreground group-hover:text-gray-300 dark:group-hover:text-gray-600 font-mono">
+                            {wordSet.words.length} WORDS
+                          </p>
+                        </div>
+                        <span className="tag group-hover:bg-background group-hover:text-foreground">
+                          START →
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           )}
+
+          {/* 내 단어장 */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                내 단어장
+              </p>
+              {!isCreatingWordSet && (
+                <button
+                  className="text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setIsCreatingWordSet(true)}
+                >
+                  + NEW
+                </button>
+              )}
+            </div>
+
+            {isCreatingWordSet && (
+              <div className="border-2 border-foreground p-4 mb-3">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="단어장 이름"
+                    value={newWordSetName}
+                    onChange={(e) => setNewWordSetName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreateWordSet();
+                      if (e.key === 'Escape') {
+                        setIsCreatingWordSet(false);
+                        setNewWordSetName('');
+                      }
+                    }}
+                    className="flex-1 border-2 border-foreground"
+                    autoFocus
+                  />
+                  <Button
+                    onClick={handleCreateWordSet}
+                    disabled={!newWordSetName.trim()}
+                    className="btn-editorial-filled"
+                  >
+                    CREATE
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setIsCreatingWordSet(false);
+                      setNewWordSetName('');
+                    }}
+                    className="btn-editorial"
+                  >
+                    CANCEL
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {customWordSets.length === 0 && !isCreatingWordSet ? (
+              <div className="border-2 border-dashed border-foreground p-6 text-center">
+                <p className="text-muted-foreground mb-2">아직 내 단어장이 없습니다</p>
+                <button
+                  className="tag hover:bg-foreground hover:text-background transition-colors"
+                  onClick={() => setIsCreatingWordSet(true)}
+                >
+                  + 첫 단어장 만들기
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-0">
+                {customWordSets.map((wordSet, index) => (
+                  <div
+                    key={wordSet.id}
+                    className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border-2 border-foreground ${
+                      index > 0 ? 'border-t-0' : ''
+                    }`}
+                  >
+                    <div className="mb-2 sm:mb-0">
+                      <h4 className="font-semibold">{wordSet.name}</h4>
+                      <p className="text-sm text-muted-foreground font-mono">
+                        {wordSet.words.length} WORDS
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="tag hover:bg-foreground hover:text-background transition-colors"
+                        onClick={() => handleEditWordSet(wordSet.id)}
+                      >
+                        EDIT
+                      </button>
+                      {wordSet.words.length > 0 && (
+                        <button
+                          className="tag-filled hover:bg-background hover:text-foreground transition-colors"
+                          onClick={() => handleStartLearning(wordSet.id)}
+                        >
+                          START →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════
+            설정 (접힘)
+        ═══════════════════════════════════════════════════════════════ */}
+        <section>
+          <div className="border-2 border-foreground">
+            <button
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-secondary transition-colors"
+              onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
+            >
+              <span className="text-sm uppercase tracking-wider">설정 · 데이터 관리</span>
+              <span className="text-muted-foreground">{isDataManagementOpen ? '▲' : '▼'}</span>
+            </button>
+            {isDataManagementOpen && (
+              <div className="border-t border-foreground">
+                <div className="grid grid-cols-2 divide-x divide-foreground">
+                  <button
+                    className="py-4 tracking-wider text-sm hover:bg-foreground hover:text-background transition-colors"
+                    onClick={handleExport}
+                  >
+                    내보내기
+                  </button>
+                  <button
+                    className="py-4 tracking-wider text-sm hover:bg-foreground hover:text-background transition-colors"
+                    onClick={handleImportClick}
+                  >
+                    가져오기
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportFile}
+            className="hidden"
+          />
         </section>
       </main>
 
-      {/* 데이터 관리 */}
-      <section className="max-w-4xl mx-auto px-4 mt-12">
-        <div className="border-2 border-foreground">
-          <div className="border-b border-foreground px-4 py-2">
-            <span className="text-sm uppercase tracking-wider">데이터 관리</span>
-          </div>
-          <div className="grid grid-cols-2 divide-x divide-foreground">
-            <button
-              className="py-4 tracking-wider text-sm hover:bg-foreground hover:text-background transition-colors"
-              onClick={handleExport}
-            >
-              내보내기
-            </button>
-            <button
-              className="py-4 tracking-wider text-sm hover:bg-foreground hover:text-background transition-colors"
-              onClick={handleImportClick}
-            >
-              가져오기
-            </button>
-          </div>
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          onChange={handleImportFile}
-          className="hidden"
-        />
-      </section>
-
       {/* 푸터 */}
-      <footer className="border-t-2 border-foreground mt-16">
+      <footer className="border-t-2 border-foreground mt-8">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <p className="text-xs text-center text-muted-foreground uppercase tracking-wider">
             VOCAB — A Minimalist Vocabulary Learning App
