@@ -4,23 +4,31 @@ import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { allWordSets } from '@/data/words';
 import { Word } from '@/types';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, AlertCircle } from 'lucide-react';
 import { getTodayString, getDateInTimezone, DEFAULT_TIMEZONE } from '@/lib/date';
 
-export default function LearningCalendar() {
+interface LearningCalendarProps {
+  onStartMissedReview?: (words: Word[]) => void;
+}
+
+export default function LearningCalendar({ onStartMissedReview }: LearningCalendarProps) {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [today, setToday] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showMissedReviews, setShowMissedReviews] = useState(false);
 
   const getMonthlyStats = useStore((state) => state.getMonthlyStats);
   const getReviewCountByDate = useStore((state) => state.getReviewCountByDate);
   const getReviewWordIdsByDate = useStore((state) => state.getReviewWordIdsByDate);
+  const getMissedReviewWordIds = useStore((state) => state.getMissedReviewWordIds);
+  const getMissedReviewCount = useStore((state) => state.getMissedReviewCount);
   const wordProgress = useStore((state) => state.wordProgress);
   const sessions = useStore((state) => state.sessions);
   const customWordSets = useStore((state) => state.customWordSets);
   const profile = useStore((state) => state.profile);
   const dailyGoal = profile?.dailyWordCount || 20;
   const timezone = profile?.timezone || DEFAULT_TIMEZONE;
+  const missedCount = getMissedReviewCount();
 
   // 클라이언트에서만 날짜 설정 (타임존 기반)
   useEffect(() => {
@@ -142,6 +150,50 @@ export default function LearningCalendar() {
     }[];
   }, [selectedDate, selectedDateType, getReviewWordIdsByDate, customWordSets, wordProgress]);
 
+  // 밀린 복습 단어 목록
+  const missedReviewWords = useMemo(() => {
+    if (!showMissedReviews || missedCount === 0) return [];
+
+    const missedWordIds = getMissedReviewWordIds();
+
+    const allWords = [
+      ...allWordSets.flatMap(ws => ws.words),
+      ...customWordSets.flatMap(ws => ws.words),
+    ];
+
+    const wordMap = new Map<string, Word>();
+    allWords.forEach(w => wordMap.set(w.id, w));
+
+    return missedWordIds.map(wordId => {
+      const word = wordMap.get(wordId);
+      const progress = wordProgress[wordId];
+      const daysMissed = progress?.nextReviewDate
+        ? Math.floor((new Date().getTime() - new Date(progress.nextReviewDate).getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+      return {
+        word,
+        scheduledDate: progress?.nextReviewDate || '',
+        daysMissed,
+        box: progress?.box || 1,
+        attemptCount: progress?.attemptCount || 0,
+        correctCount: progress?.correctCount || 0,
+      };
+    }).filter(item => item.word !== undefined) as {
+      word: Word;
+      scheduledDate: string;
+      daysMissed: number;
+      box: number;
+      attemptCount: number;
+      correctCount: number;
+    }[];
+  }, [showMissedReviews, missedCount, getMissedReviewWordIds, customWordSets, wordProgress]);
+
+  const handleStartMissedReview = () => {
+    if (onStartMissedReview && missedReviewWords.length > 0) {
+      onStartMissedReview(missedReviewWords.map(item => item.word));
+    }
+  };
+
   const handlePrevMonth = () => {
     setCurrentDate(new Date(year, month - 2, 1));
   };
@@ -190,6 +242,76 @@ export default function LearningCalendar() {
           </span>
         </div>
       </div>
+
+      {/* 밀린 복습 알림 */}
+      {missedCount > 0 && (
+        <button
+          onClick={() => setShowMissedReviews(!showMissedReviews)}
+          className="w-full border-b border-foreground px-4 py-3 flex items-center justify-between hover:opacity-90 transition-opacity"
+          style={{ backgroundColor: 'var(--accent-amber-light)' }}
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle size={18} style={{ color: 'var(--accent-amber)' }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--accent-amber-dark)' }}>
+              밀린 복습 {missedCount}개
+            </span>
+            <span className="text-xs text-muted-foreground">
+              — 지금 시작하면 돼요!
+            </span>
+          </div>
+          <span className="text-xs" style={{ color: 'var(--accent-amber)' }}>
+            {showMissedReviews ? '접기' : '보기'}
+          </span>
+        </button>
+      )}
+
+      {/* 밀린 복습 단어 목록 */}
+      {showMissedReviews && missedReviewWords.length > 0 && (
+        <div className="border-b-2 border-foreground">
+          <div className="max-h-48 overflow-y-auto">
+            {missedReviewWords.map(({ word, daysMissed, box, attemptCount, correctCount }, index) => {
+              const accuracy = attemptCount > 0 ? Math.round((correctCount / attemptCount) * 100) : 0;
+              return (
+                <div
+                  key={word.id}
+                  className={`flex items-center justify-between px-4 py-2 ${
+                    index > 0 ? 'border-t border-border' : ''
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-sm">{word.english}</span>
+                    <span className="text-muted-foreground mx-2">—</span>
+                    <span className="text-muted-foreground text-sm">{word.korean}</span>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2 shrink-0">
+                    <span
+                      className="text-[10px] font-mono"
+                      style={{ color: 'var(--accent-amber)' }}
+                    >
+                      {daysMissed}일 전
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {accuracy}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {onStartMissedReview && (
+            <button
+              onClick={handleStartMissedReview}
+              className="w-full py-3 font-semibold text-sm uppercase tracking-wider transition-colors hover:opacity-90"
+              style={{
+                backgroundColor: 'var(--accent-amber)',
+                color: 'white',
+              }}
+            >
+              지금 복습 시작하기 →
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 월 네비게이션 */}
       <div className="border-b border-foreground px-4 py-3 flex justify-between items-center">

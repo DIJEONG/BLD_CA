@@ -39,6 +39,9 @@ interface StoreActions {
   getReviewCountByDate: (date: string) => number;
   getReviewWordIdsByDate: (date: string) => string[];
   getReviewSchedule: (days: number) => Record<string, number>;
+  // 밀린 복습 조회
+  getMissedReviewCount: () => number;
+  getMissedReviewWordIds: () => string[];
 
   // 세션
   addSession: (session: LearningSession) => void;
@@ -231,6 +234,24 @@ export const useStore = create<AppState & StoreActions>()(
         });
 
         return schedule;
+      },
+
+      // 밀린 복습 단어 개수 (오늘 이전에 복습했어야 하는 단어)
+      getMissedReviewCount: () => {
+        const today = getTodayString();
+        const allProgress = Object.values(get().wordProgress);
+        return allProgress.filter(
+          (p) => p.attemptCount > 0 && p.nextReviewDate < today
+        ).length;
+      },
+
+      // 밀린 복습 단어 ID 목록
+      getMissedReviewWordIds: () => {
+        const today = getTodayString();
+        const allProgress = Object.values(get().wordProgress);
+        return allProgress
+          .filter((p) => p.attemptCount > 0 && p.nextReviewDate < today)
+          .map((p) => p.wordId);
       },
 
       addSession: (session) => {

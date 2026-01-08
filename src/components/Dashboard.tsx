@@ -509,7 +509,14 @@ export default function Dashboard() {
             </button>
             {isCalendarOpen && (
               <div className="border-t border-foreground">
-                <LearningCalendar />
+                <LearningCalendar
+                  onStartMissedReview={(words) => {
+                    setCustomWords(words);
+                    setSelectedWordSetId('missed-review');
+                    setModeName('밀린 복습');
+                    setIsLearning(true);
+                  }}
+                />
               </div>
             )}
           </div>
