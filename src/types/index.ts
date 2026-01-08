@@ -88,6 +88,7 @@ export interface LearningSession {
 export interface SessionAnswer {
   wordId: string;
   knew: boolean;                // 알았다(true) / 몰랐다(false)
+  usedHint?: boolean;           // 힌트 사용 여부 (2번째 이후 시도에서 정답)
   timeSpentMs: number;
 }
 

@@ -352,9 +352,17 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Retry 핸들러
+  const handleRetry = () => {
+    resetSession();
+    startSession(previewWords, wordSetId);
+    setElapsedTime(0);
+    setPhase('flashcard');
+  };
+
   // ===== 결과 페이지 =====
   if (phase === 'result') {
-    return <LearningResult onFinish={onFinish} />;
+    return <LearningResult onFinish={onFinish} onRetry={handleRetry} />;
   }
 
   // ===== 미리보기 단계 =====

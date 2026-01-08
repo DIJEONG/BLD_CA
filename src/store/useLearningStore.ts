@@ -241,6 +241,7 @@ export const useLearningStore = create<LearningState>((set, get) => ({
       const answer: SessionAnswer = {
         wordId: currentWord.id,
         knew: true,
+        usedHint: false,
         timeSpentMs: Date.now() - (wordStartTime || Date.now()),
       };
 
@@ -256,6 +257,7 @@ export const useLearningStore = create<LearningState>((set, get) => ({
       const answer: SessionAnswer = {
         wordId: currentWord.id,
         knew: false, // 힌트 도움 받았으므로 오답
+        usedHint: true, // 힌트 사용 표시
         timeSpentMs: Date.now() - (wordStartTime || Date.now()),
       };
 
@@ -271,6 +273,7 @@ export const useLearningStore = create<LearningState>((set, get) => ({
       const answer: SessionAnswer = {
         wordId: currentWord.id,
         knew: false,
+        usedHint: false,
         timeSpentMs: Date.now() - (wordStartTime || Date.now()),
       };
 
@@ -301,6 +304,7 @@ export const useLearningStore = create<LearningState>((set, get) => ({
     const answer: SessionAnswer = {
       wordId: currentWord.id,
       knew: false,
+      usedHint: false,
       timeSpentMs: Date.now() - (wordStartTime || Date.now()),
     };
 

@@ -5,17 +5,19 @@ import { useStore } from '@/store/useStore';
 
 interface LearningResultProps {
   onFinish: () => void;
+  onRetry: () => void;
 }
 
-export default function LearningResult({ onFinish }: LearningResultProps) {
-  const { words, typingAnswers, getElapsedTime, resetSession, startSession } = useLearningStore();
+export default function LearningResult({ onFinish, onRetry }: LearningResultProps) {
+  const { words, typingAnswers, getElapsedTime, resetSession } = useLearningStore();
   const getWordProgress = useStore((state) => state.getWordProgress);
 
+  // 3단계 분류: 정답 / 힌트 사용 / 오답
   const correctCount = typingAnswers.filter((a) => a.knew).length;
-  const wrongCount = typingAnswers.filter((a) => !a.knew).length;
+  const hintCount = typingAnswers.filter((a) => !a.knew && a.usedHint).length;
+  const wrongCount = typingAnswers.filter((a) => !a.knew && !a.usedHint).length;
   const totalTime = getElapsedTime();
   const accuracy = typingAnswers.length > 0 ? Math.round((correctCount / typingAnswers.length) * 100) : 0;
-  const avgTimePerWord = typingAnswers.length > 0 ? Math.round(totalTime / typingAnswers.length) : 0;
 
   // 모든 단어와 복습 간격
   const allAnswersWithInterval = typingAnswers.map((a) => {
@@ -24,9 +26,10 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
     return { ...a, word, interval: progress?.interval || 1 };
   });
 
-  // 정답/오답 분리
+  // 3단계 분류
   const correctAnswers = allAnswersWithInterval.filter((a) => a.knew);
-  const wrongAnswers = allAnswersWithInterval.filter((a) => !a.knew);
+  const hintAnswers = allAnswersWithInterval.filter((a) => !a.knew && a.usedHint);
+  const wrongAnswers = allAnswersWithInterval.filter((a) => !a.knew && !a.usedHint);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -44,9 +47,7 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
   };
 
   const handleRetry = () => {
-    const currentWords = [...words];
-    resetSession();
-    startSession(currentWords, '');
+    onRetry();
   };
 
   const handleHome = () => {
@@ -81,22 +82,22 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
         </div>
 
         {/* 통계 그리드 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-2 border-foreground mb-8">
-          <div className="p-3 sm:p-4 border-r border-foreground border-b sm:border-b-0 text-center">
+        <div className="grid grid-cols-4 gap-0 border-2 border-foreground mb-8">
+          <div className="p-3 sm:p-4 border-r border-foreground text-center">
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Total</p>
             <p className="text-xl sm:text-2xl font-mono font-bold">{typingAnswers.length}</p>
           </div>
-          <div className="p-3 sm:p-4 sm:border-r border-foreground border-b sm:border-b-0 text-center">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Correct</p>
+          <div className="p-3 sm:p-4 border-r border-foreground text-center">
+            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--accent-success)' }}>○ 정답</p>
             <p className="text-xl sm:text-2xl font-mono font-bold">{correctCount}</p>
           </div>
           <div className="p-3 sm:p-4 border-r border-foreground text-center">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Wrong</p>
-            <p className="text-xl sm:text-2xl font-mono font-bold">{wrongCount}</p>
+            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--accent-amber)' }}>△ 힌트</p>
+            <p className="text-xl sm:text-2xl font-mono font-bold">{hintCount}</p>
           </div>
           <div className="p-3 sm:p-4 text-center">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Time</p>
-            <p className="text-xl sm:text-2xl font-mono font-bold">{formatTime(totalTime)}</p>
+            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--accent-error)' }}>✕ 오답</p>
+            <p className="text-xl sm:text-2xl font-mono font-bold">{wrongCount}</p>
           </div>
         </div>
 
@@ -105,8 +106,8 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
           <div className="border-b border-foreground px-4 py-2">
             <span className="text-sm uppercase tracking-wider">Next Review</span>
           </div>
-          <div className="max-h-[250px] sm:max-h-[300px] overflow-y-auto">
-            {/* 정답 단어 */}
+          <div>
+            {/* 정답 단어 (○) */}
             {correctAnswers.map((item, index) => (
               <div
                 key={`correct-${index}`}
@@ -128,8 +129,34 @@ export default function LearningResult({ onFinish }: LearningResultProps) {
               </div>
             ))}
 
-            {/* 오답 단어 */}
-            {wrongAnswers.length > 0 && correctAnswers.length > 0 && (
+            {/* 힌트 사용 단어 (△) */}
+            {hintAnswers.length > 0 && correctAnswers.length > 0 && (
+              <div className="border-t-2 border-foreground" />
+            )}
+            {hintAnswers.map((item, index) => (
+              <div
+                key={`hint-${index}`}
+                className={`flex justify-between items-center px-3 sm:px-4 py-2 sm:py-3 ${
+                  index > 0 ? 'border-t border-border' : ''
+                }`}
+                style={{ backgroundColor: 'var(--accent-amber-light)' }}
+              >
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <span className="font-mono text-xs sm:text-sm shrink-0" style={{ color: 'var(--accent-amber)' }}>△</span>
+                  <div className="min-w-0 truncate">
+                    <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
+                    <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
+                    <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
+                  </div>
+                </div>
+                <span className="font-mono text-xs sm:text-sm shrink-0 ml-2" style={{ color: 'var(--accent-amber)' }}>
+                  내일
+                </span>
+              </div>
+            ))}
+
+            {/* 오답 단어 (✕) */}
+            {wrongAnswers.length > 0 && (correctAnswers.length > 0 || hintAnswers.length > 0) && (
               <div className="border-t-2 border-foreground" />
             )}
             {wrongAnswers.map((item, index) => (
