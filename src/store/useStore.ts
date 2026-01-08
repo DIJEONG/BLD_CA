@@ -19,7 +19,7 @@ import {
   efToLeitnerBox,
   SM2_DEFAULTS,
 } from '@/lib/sm2';
-import { getTodayString, getDaysDiff, getDateInTimezone, DEFAULT_TIMEZONE } from '@/lib/date';
+import { getTodayString, getDaysDiff, getWeekDates, DEFAULT_TIMEZONE } from '@/lib/date';
 import { allWordSets, getWordsByIds } from '@/data/words';
 import { getPlanById, generatePlanWords } from '@/data/studyPlans';
 
@@ -271,28 +271,19 @@ export const useStore = create<AppState & StoreActions>()(
       },
 
       getWeeklyStats: () => {
-        const stats: DailyStats[] = [];
         const timezone = get().profile?.timezone || DEFAULT_TIMEZONE;
-        const today = getDateInTimezone(timezone);
+        const weekDates = getWeekDates(timezone); // 일요일~토요일
 
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date(today);
-          date.setDate(date.getDate() - i);
-          const dateStr = date.toLocaleDateString('en-CA');
-
-          stats.push(
-            get().dailyStats[dateStr] || {
-              date: dateStr,
-              wordsStudied: 0,
-              correctCount: 0,
-              wrongCount: 0,
-              totalTimeSeconds: 0,
-              sessionsCount: 0,
-            }
-          );
-        }
-
-        return stats;
+        return weekDates.map((dateStr) =>
+          get().dailyStats[dateStr] || {
+            date: dateStr,
+            wordsStudied: 0,
+            correctCount: 0,
+            wrongCount: 0,
+            totalTimeSeconds: 0,
+            sessionsCount: 0,
+          }
+        );
       },
 
       // 월별 통계 조회

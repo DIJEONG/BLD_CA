@@ -21,7 +21,7 @@ import LearningCalendar from './LearningCalendar';
 import GuidePage from './GuidePage';
 import StudyPlanSelector from './StudyPlanSelector';
 import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
-import { getTodayString, getKoreanDateString, getDayOfWeek, DEFAULT_TIMEZONE } from '@/lib/date';
+import { getTodayString, getKoreanDateString, DEFAULT_TIMEZONE } from '@/lib/date';
 import { getPlanById } from '@/data/studyPlans';
 import { Word, TimezoneOption, TIMEZONE_LABELS } from '@/types';
 import { useTheme } from '@/hooks/useTheme';
@@ -453,8 +453,8 @@ export default function Dashboard() {
                       const height = stat.wordsStudied > 0
                         ? Math.max((stat.wordsStudied / dailyGoal) * 100, 10)
                         : 0;
-                      const dayIndex = getDayOfWeek(stat.date);
-                      const day = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][dayIndex];
+                      // 항상 일~토 순서 (인덱스 = 요일)
+                      const day = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][i];
                       const isToday = stat.date === todayString;
 
                       return (

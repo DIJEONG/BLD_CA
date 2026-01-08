@@ -31,14 +31,19 @@ export function getDaysDiff(date1: string, date2: string): number {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
 }
 
-// 주간 날짜 배열 생성 (최근 7일)
+// 주간 날짜 배열 생성 (이번 주 일요일~토요일)
 export function getWeekDates(timezone: TimezoneOption = DEFAULT_TIMEZONE): string[] {
   const today = getDateInTimezone(timezone);
+  const dayOfWeek = today.getDay(); // 0 = Sunday
   const dates: string[] = [];
 
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
+  // 이번 주 일요일부터 시작
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - dayOfWeek);
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(sunday);
+    date.setDate(sunday.getDate() + i);
     dates.push(date.toLocaleDateString('en-CA'));
   }
 
