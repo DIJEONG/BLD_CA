@@ -785,18 +785,41 @@ export default function LearningPage({ wordSetId, onFinish, customWords, modeNam
                   {isCorrect ? '정답!' : '오답'}
                 </p>
                 <p className="text-2xl sm:text-3xl font-serif font-bold">{currentWord.english}</p>
+                {currentWord.example && (
+                  <div className="mt-3 pt-3 border-t border-current/20">
+                    <p className="text-sm italic text-muted-foreground">"{currentWord.example}"</p>
+                    {currentWord.exampleKorean && (
+                      <p className="text-xs text-muted-foreground/70 mt-1">{currentWord.exampleKorean}</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
             {/* 힌트 표시 */}
             {!isTypingRevealed && hintInfo && hintInfo.hint && (
               <div className="border-t border-foreground p-4 text-center bg-secondary">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
                   Hint ({attemptCount - 1}/{(hintInfo.maxAttempts || 4) - 1})
                 </p>
-                <p className="font-mono text-lg font-bold">
-                  {hintInfo.hint}
-                </p>
+                {/* 예문 힌트 */}
+                {(hintInfo.hintType === 'example' || hintInfo.hintType === 'example+letter') && (
+                  <p className="text-sm sm:text-base italic text-foreground/80 mb-2">
+                    "{hintInfo.hint}"
+                  </p>
+                )}
+                {/* 글자 힌트 (예문+글자 또는 글자만) */}
+                {(hintInfo.hintType === 'example+letter' && hintInfo.letterHint) && (
+                  <p className="font-mono text-lg font-bold mt-2">
+                    {hintInfo.letterHint}
+                  </p>
+                )}
+                {/* 기존 글자 힌트 (예문 없는 경우) */}
+                {hintInfo.hintType === 'letter' && (
+                  <p className="font-mono text-lg font-bold">
+                    {hintInfo.hint}
+                  </p>
+                )}
               </div>
             )}
 

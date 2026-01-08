@@ -117,10 +117,17 @@ export default function LearningResult({ onFinish, onRetry }: LearningResultProp
               >
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <span className="font-mono text-xs sm:text-sm shrink-0" style={{ color: 'var(--accent-success)' }}>○</span>
-                  <div className="min-w-0 truncate">
-                    <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
-                    <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
-                    <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
+                  <div className="min-w-0">
+                    <div className="truncate">
+                      <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
+                      <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
+                    </div>
+                    {item.word?.example && (
+                      <p className="text-xs text-muted-foreground/70 italic mt-0.5 truncate">
+                        "{item.word.example}"
+                      </p>
+                    )}
                   </div>
                 </div>
                 <span className="font-mono text-xs sm:text-sm shrink-0 ml-2" style={{ color: 'var(--accent-teal)' }}>
@@ -143,10 +150,17 @@ export default function LearningResult({ onFinish, onRetry }: LearningResultProp
               >
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <span className="font-mono text-xs sm:text-sm shrink-0" style={{ color: 'var(--accent-amber)' }}>△</span>
-                  <div className="min-w-0 truncate">
-                    <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
-                    <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
-                    <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
+                  <div className="min-w-0">
+                    <div className="truncate">
+                      <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
+                      <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
+                    </div>
+                    {item.word?.example && (
+                      <p className="text-xs text-muted-foreground/70 italic mt-0.5 truncate">
+                        "{item.word.example}"
+                      </p>
+                    )}
                   </div>
                 </div>
                 <span className="font-mono text-xs sm:text-sm shrink-0 ml-2" style={{ color: 'var(--accent-amber)' }}>
@@ -169,10 +183,17 @@ export default function LearningResult({ onFinish, onRetry }: LearningResultProp
               >
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <span className="font-mono text-xs sm:text-sm shrink-0" style={{ color: 'var(--accent-error)' }}>✕</span>
-                  <div className="min-w-0 truncate">
-                    <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
-                    <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
-                    <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
+                  <div className="min-w-0">
+                    <div className="truncate">
+                      <span className="font-semibold text-sm sm:text-base">{item.word?.english}</span>
+                      <span className="text-muted-foreground mx-1 sm:mx-2">—</span>
+                      <span className="text-muted-foreground text-sm sm:text-base">{item.word?.korean}</span>
+                    </div>
+                    {item.word?.example && (
+                      <p className="text-xs text-muted-foreground/70 italic mt-0.5 truncate">
+                        "{item.word.example}"
+                      </p>
+                    )}
                   </div>
                 </div>
                 <span className="font-mono text-xs sm:text-sm shrink-0 ml-2" style={{ color: 'var(--accent-error)' }}>

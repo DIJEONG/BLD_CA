@@ -4,7 +4,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { Input } from '@/components/ui/input';
 import AddWordForm from './AddWordForm';
-import { translateToKorean } from '@/lib/translate';
+import { translateToKorean, generateExample } from '@/lib/translate';
 import { Word } from '@/types';
 import {
   parseWordSetJSON,
@@ -90,6 +90,10 @@ export default function WordSetEditor({
   const [isAutoTranslating, setIsAutoTranslating] = useState(false);
   const [isFinalAdding, setIsFinalAdding] = useState(false);
 
+  // 예문 일괄 생성 관련 상태
+  const [isGeneratingExamples, setIsGeneratingExamples] = useState(false);
+  const [exampleGenProgress, setExampleGenProgress] = useState({ current: 0, total: 0, success: 0 });
+
   // Store에서 직접 단어장 조회 (실시간 업데이트)
   const customWordSets = useStore((state) => state.customWordSets);
   const wordSet = customWordSets.find(ws => ws.id === wordSetId);
@@ -100,6 +104,7 @@ export default function WordSetEditor({
   const deleteCustomWordSet = useStore((state) => state.deleteCustomWordSet);
   const removeWordFromCustomSet = useStore((state) => state.removeWordFromCustomSet);
   const addWordToCustomSet = useStore((state) => state.addWordToCustomSet);
+  const updateWordInCustomSet = useStore((state) => state.updateWordInCustomSet);
 
   // 날짜별 단어 그룹핑
   const dateGroups = useMemo((): DateGroup[] => {
@@ -140,6 +145,12 @@ export default function WordSetEditor({
     }));
   }, [wordSet]);
 
+  // 예문 없는 단어 수
+  const wordsWithoutExample = useMemo(() => {
+    if (!wordSet) return [];
+    return wordSet.words.filter(w => !w.example);
+  }, [wordSet]);
+
   // 단어장이 없으면 (삭제된 경우) 돌아가기
   if (!wordSet) {
     onBack();
@@ -160,6 +171,48 @@ export default function WordSetEditor({
 
   const handleRemoveWord = (wordId: string) => {
     removeWordFromCustomSet(wordSet.id, wordId);
+  };
+
+  // 예문 일괄 생성
+  const handleGenerateExamples = async () => {
+    if (wordsWithoutExample.length === 0 || isGeneratingExamples) return;
+
+    setIsGeneratingExamples(true);
+    setExampleGenProgress({ current: 0, total: wordsWithoutExample.length, success: 0 });
+
+    let successCount = 0;
+
+    for (let i = 0; i < wordsWithoutExample.length; i++) {
+      const word = wordsWithoutExample[i];
+
+      try {
+        // 예문 생성
+        const exampleResult = await generateExample(word.english);
+
+        if (exampleResult.success && exampleResult.example) {
+          // 예문 번역
+          const translateResult = await translateToKorean(exampleResult.example);
+
+          // 단어 업데이트
+          updateWordInCustomSet(wordSet.id, word.id, {
+            example: exampleResult.example,
+            exampleKorean: translateResult.success ? translateResult.translation : undefined,
+          });
+
+          successCount++;
+        }
+      } catch {
+        // 개별 에러는 무시하고 계속 진행
+      }
+
+      setExampleGenProgress({
+        current: i + 1,
+        total: wordsWithoutExample.length,
+        success: successCount,
+      });
+    }
+
+    setIsGeneratingExamples(false);
   };
 
   // URL에서 단어 추출
@@ -1301,7 +1354,40 @@ export default function WordSetEditor({
 
         {/* 단어 목록 - 날짜별 그룹 */}
         <div>
-          <h2 className="section-title">단어 목록</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title mb-0">단어 목록</h2>
+            {wordsWithoutExample.length > 0 && (
+              <button
+                className="tag hover:bg-foreground hover:text-background transition-colors disabled:opacity-50"
+                onClick={handleGenerateExamples}
+                disabled={isGeneratingExamples}
+              >
+                {isGeneratingExamples
+                  ? `예문 생성 중... (${exampleGenProgress.current}/${exampleGenProgress.total})`
+                  : `예문 자동 생성 (${wordsWithoutExample.length})`}
+              </button>
+            )}
+          </div>
+
+          {/* 예문 생성 진행률 */}
+          {isGeneratingExamples && (
+            <div className="mb-4 p-4 border-2 border-foreground bg-secondary">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex-1 h-2 bg-background border border-foreground overflow-hidden">
+                  <div
+                    className="h-full bg-foreground transition-all duration-300"
+                    style={{ width: `${Math.round((exampleGenProgress.current / exampleGenProgress.total) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-sm font-mono">
+                  {exampleGenProgress.current}/{exampleGenProgress.total}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                성공: {exampleGenProgress.success}개 · 사전에 예문이 없는 단어는 건너뜁니다
+              </p>
+            </div>
+          )}
 
           {wordSet.words.length === 0 ? (
             <div className="border-2 border-dashed border-foreground p-8 text-center">

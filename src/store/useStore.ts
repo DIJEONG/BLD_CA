@@ -61,6 +61,7 @@ interface StoreActions {
   updateCustomWordSet: (id: string, updates: Partial<Pick<CustomWordSet, 'name' | 'description'>>) => void;
   deleteCustomWordSet: (id: string) => void;
   addWordToCustomSet: (setId: string, word: Omit<Word, 'id'>) => void;
+  updateWordInCustomSet: (setId: string, wordId: string, updates: Partial<Omit<Word, 'id'>>) => void;
   removeWordFromCustomSet: (setId: string, wordId: string) => void;
   getCustomWordSets: () => CustomWordSet[];
 
@@ -408,6 +409,22 @@ export const useStore = create<AppState & StoreActions>()(
               ? {
                   ...ws,
                   words: [...ws.words, newWord],
+                  updatedAt: new Date().toISOString(),
+                }
+              : ws
+          ),
+        }));
+      },
+
+      updateWordInCustomSet: (setId, wordId, updates) => {
+        set((state) => ({
+          customWordSets: state.customWordSets.map((ws) =>
+            ws.id === setId
+              ? {
+                  ...ws,
+                  words: ws.words.map((w) =>
+                    w.id === wordId ? { ...w, ...updates } : w
+                  ),
                   updatedAt: new Date().toISOString(),
                 }
               : ws

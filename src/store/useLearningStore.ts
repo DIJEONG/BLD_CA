@@ -58,7 +58,7 @@ interface LearningState {
   getTypingProgress: () => { current: number; total: number; correct: number; wrong: number };
 
   // 힌트 시스템
-  getHint: () => { hint: string; attemptNum: number; maxAttempts: number } | null;
+  getHint: () => { hint: string; attemptNum: number; maxAttempts: number; hintType: string; letterHint?: string } | null;
   shouldShowAnswer: () => boolean;
 
   // 세션 완료
@@ -353,33 +353,67 @@ export const useLearningStore = create<LearningState>((set, get) => ({
     if (!currentWord) return null;
 
     const english = currentWord.english;
+    const example = currentWord.example;
     const MAX_ATTEMPTS = 4;
 
     // 1회차: 힌트 없음
     if (attemptCount === 1) {
-      return { hint: '', attemptNum: attemptCount, maxAttempts: MAX_ATTEMPTS };
+      return { hint: '', attemptNum: attemptCount, maxAttempts: MAX_ATTEMPTS, hintType: 'none' };
     }
 
-    // 2회차: 첫 글자 + 밑줄 + 글자 수
-    if (attemptCount === 2) {
-      const firstLetter = english.charAt(0);
-      const underscores = '_'.repeat(english.length - 1);
-      const hint = `${firstLetter}${underscores} (${english.length}글자)`;
-      return { hint, attemptNum: attemptCount, maxAttempts: MAX_ATTEMPTS };
-    }
+    // 예문이 있는 경우: 예문 기반 힌트
+    if (example) {
+      // 예문에서 단어를 빈칸으로 대체 (대소문자 무시)
+      const regex = new RegExp(english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const blankLength = Math.max(english.length, 5);
+      const blankedExample = example.replace(regex, '_'.repeat(blankLength));
 
-    // 3회차: 첫 2글자 + 밑줄 + 마지막 글자
-    if (attemptCount === 3) {
-      const firstTwo = english.slice(0, 2);
-      const lastOne = english.charAt(english.length - 1);
-      const middleLength = english.length - 3;
-      const underscores = middleLength > 0 ? '_'.repeat(middleLength) : '';
-      const hint = `${firstTwo}${underscores}${lastOne} (${english.length}글자)`;
-      return { hint, attemptNum: attemptCount, maxAttempts: MAX_ATTEMPTS };
+      // 2회차: 예문 (단어 빈칸 처리)
+      if (attemptCount === 2) {
+        return {
+          hint: blankedExample,
+          attemptNum: attemptCount,
+          maxAttempts: MAX_ATTEMPTS,
+          hintType: 'example',
+        };
+      }
+
+      // 3회차: 예문 + 첫 글자 힌트
+      if (attemptCount === 3) {
+        const firstLetter = english.charAt(0);
+        const underscores = '_'.repeat(english.length - 1);
+        const letterHint = `${firstLetter}${underscores} (${english.length}글자)`;
+        return {
+          hint: blankedExample,
+          letterHint,
+          attemptNum: attemptCount,
+          maxAttempts: MAX_ATTEMPTS,
+          hintType: 'example+letter',
+        };
+      }
+    } else {
+      // 예문 없는 경우: 기존 글자 힌트
+      // 2회차: 첫 글자 + 밑줄 + 글자 수
+      if (attemptCount === 2) {
+        const firstLetter = english.charAt(0);
+        const underscores = '_'.repeat(english.length - 1);
+        const hint = `${firstLetter}${underscores} (${english.length}글자)`;
+        return { hint, attemptNum: attemptCount, maxAttempts: MAX_ATTEMPTS, hintType: 'letter' };
+      }
+
+      // 3회차: 첫 2글자 + 밑줄 + 마지막 글자
+      if (attemptCount === 3) {
+        const firstTwo = english.slice(0, 2);
+        const lastOne = english.charAt(english.length - 1);
+        const middleLength = english.length - 3;
+        const underscores = middleLength > 0 ? '_'.repeat(middleLength) : '';
+        const hint = `${firstTwo}${underscores}${lastOne} (${english.length}글자)`;
+        return { hint, attemptNum: attemptCount, maxAttempts: MAX_ATTEMPTS, hintType: 'letter' };
+      }
     }
 
     // 4회차 이상: 정답 공개
-    return { hint: english, attemptNum: attemptCount, maxAttempts: MAX_ATTEMPTS };
+    return { hint: english, attemptNum: attemptCount, maxAttempts: MAX_ATTEMPTS, hintType: 'answer' };
   },
 
   shouldShowAnswer: () => {
