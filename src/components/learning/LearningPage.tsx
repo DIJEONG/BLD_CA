@@ -14,14 +14,13 @@ import { Volume2 } from 'lucide-react';
 interface LearningPageProps {
   wordSetId: string;
   onFinish: () => void;
-  wrongWordsMode?: boolean;
-  customWords?: Word[];  // 특정 단어만 학습할 때 (일자별 학습 등)
-  modeName?: string;     // 학습 모드 이름 (플랜 학습 등)
+  customWords?: Word[];  // 특정 단어만 학습할 때 (일자별 학습, 복습 등)
+  modeName?: string;     // 학습 모드 이름 (플랜 학습, 오늘의 복습 등)
 }
 
 type LearningPhase = 'preview' | 'flashcard' | 'typing' | 'result';
 
-export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = false, customWords, modeName }: LearningPageProps) {
+export default function LearningPage({ wordSetId, onFinish, customWords, modeName }: LearningPageProps) {
   const [phase, setPhase] = useState<LearningPhase>('preview');
   const [elapsedTime, setElapsedTime] = useState(0);
   const [initialized, setInitialized] = useState(false);
@@ -34,8 +33,6 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
   const profile = useStore((state) => state.profile);
   const getWordsForReview = useStore((state) => state.getWordsForReview);
   const getCustomWordSets = useStore((state) => state.getCustomWordSets);
-  const getWrongWords = useStore((state) => state.getWrongWords);
-  const clearWrongCount = useStore((state) => state.clearWrongCount);
 
   const wordSet = useMemo(() => {
     const builtInSet = getWordSetById(wordSetId);
@@ -110,27 +107,14 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
   useEffect(() => {
     if (!initialized) {
-      // customWords가 제공된 경우 (일자별 학습 등)
+      // customWords가 제공된 경우 (복습, 플랜 학습 등)
       if (customWords && customWords.length > 0) {
         setPreviewWords(customWords);
         setInitialized(true);
         return;
       }
 
-      // 오답 복습 모드
-      if (wrongWordsMode) {
-        const wrongProgress = getWrongWords();
-        const wrongWordIdsArray = wrongProgress.map(p => p.wordId);
-        const customSets = getCustomWordSets();
-        const wrongWordObjects = findAllWordsByIds(wrongWordIdsArray, customSets);
-
-        setReviewWordIds(new Set(wrongWordIdsArray));
-        setPreviewWords(wrongWordObjects);
-        setInitialized(true);
-        return;
-      }
-
-      // 일반 모드
+      // 일반 모드 (단어장 학습)
       if (wordSet) {
         const wordProgress = useStore.getState().wordProgress;
 
@@ -183,7 +167,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         setInitialized(true);
       }
     }
-  }, [wordSet, initialized, dailyGoal, getWordsForReview, wrongWordsMode, getWrongWords, getCustomWordSets, customWords]);
+  }, [wordSet, initialized, dailyGoal, getWordsForReview, getCustomWordSets, customWords]);
 
   useEffect(() => {
     if (isActive && (phase === 'flashcard' || phase === 'typing')) {
@@ -227,7 +211,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
 
   // 다른 단어로 섞기 (스마트 알고리즘)
   const handleShuffleWords = () => {
-    if (!wordSet || wrongWordsMode) return;
+    if (!wordSet || customWords) return; // customWords 모드에서는 셔플 비활성화
 
     const wordProgress = useStore.getState().wordProgress;
     const today = getTodayString();
@@ -290,15 +274,11 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
   const handleNextTyping = useCallback(() => {
     if (currentIndex >= words.length - 1) {
       completeSession();
-      // 오답 복습 모드에서 세션 완료 시 wrongCount 초기화
-      if (wrongWordsMode) {
-        words.forEach(word => clearWrongCount(word.id));
-      }
       setPhase('result');
     } else {
       nextTypingWord();
     }
-  }, [currentIndex, words.length, completeSession, nextTypingWord, wrongWordsMode, words, clearWrongCount]);
+  }, [currentIndex, words.length, completeSession, nextTypingWord]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (phase === 'flashcard') {
@@ -388,18 +368,16 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
               >
                 ← EXIT
               </button>
-              <span className="font-mono text-sm">{wrongWordsMode ? '오답 복습' : (modeName || wordSet?.name)}</span>
+              <span className="font-mono text-sm">{modeName || wordSet?.name}</span>
               <div className="w-16" />
             </div>
           </header>
           <main className="max-w-2xl mx-auto px-4 py-16 text-center">
             <h1 className="text-2xl font-serif font-bold mb-4">
-              {wrongWordsMode ? '복습할 오답이 없습니다' : '학습할 단어가 없습니다'}
+              학습할 단어가 없습니다
             </h1>
             <p className="text-muted-foreground mb-8">
-              {wrongWordsMode
-                ? '틀린 단어가 없거나 해당 단어장이 삭제되었습니다.'
-                : '단어장에 단어가 없습니다.'}
+              단어장에 단어가 없습니다.
             </p>
             <button
               className="tag hover:bg-foreground hover:text-background transition-colors"
@@ -422,7 +400,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
             >
               ← EXIT
             </button>
-            <span className="font-mono text-sm">{wrongWordsMode ? '오답 복습' : (modeName || wordSet?.name)}</span>
+            <span className="font-mono text-sm">{modeName || wordSet?.name}</span>
             <div className="w-16" />
           </div>
         </header>
@@ -430,16 +408,12 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
         <main className="max-w-2xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
             <p className="text-sm uppercase tracking-wider text-muted-foreground mb-2">
-              {wrongWordsMode ? 'Wrong Words Review' : "Today's Session"}
+              {modeName ? modeName : "Today's Session"}
             </p>
             <h1 className="text-3xl sm:text-4xl font-serif font-bold mb-2">
               {previewWords.length} WORDS
             </h1>
-            {wrongWordsMode ? (
-              <span className="tag-error">
-                틀린 단어 집중 학습
-              </span>
-            ) : reviewWordIds.size > 0 && (
+            {reviewWordIds.size > 0 && (
               <span className="tag-teal">
                 REVIEW {reviewWordIds.size}
               </span>
@@ -464,7 +438,7 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
           <div className="border-2 border-foreground mb-8">
             <div className="border-b border-foreground px-4 py-2 flex justify-between items-center">
               <span className="text-sm uppercase tracking-wider">Word List</span>
-              {!wrongWordsMode && wordSet && wordSet.words.length > dailyGoal && (
+              {!customWords && wordSet && wordSet.words.length > dailyGoal && (
                 <button
                   className="text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
                   onClick={handleShuffleWords}
@@ -490,8 +464,8 @@ export default function LearningPage({ wordSetId, onFinish, wrongWordsMode = fal
                       <span className="text-muted-foreground text-sm sm:text-base">{word.korean}</span>
                     </div>
                     {isReview && (
-                      <span className={`${wrongWordsMode ? 'tag-error' : 'tag-teal'} text-[10px] sm:text-xs shrink-0`}>
-                        {wrongWordsMode ? 'WRONG' : 'REVIEW'}
+                      <span className="tag-teal text-[10px] sm:text-xs shrink-0">
+                        REVIEW
                       </span>
                     )}
                   </div>

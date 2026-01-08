@@ -8,7 +8,7 @@ import { allWordSets, getWordSetsByGrade } from '@/data/words';
 import {
   Sun,
   Moon,
-  XCircle,
+  RefreshCw,
   BookOpen,
   Zap,
   Target,
@@ -21,17 +21,17 @@ import LearningCalendar from './LearningCalendar';
 import GuidePage from './GuidePage';
 import StudyPlanSelector from './StudyPlanSelector';
 import { exportDataToJSON, importDataFromJSON } from '@/lib/dataExport';
-import { getCanadaDate, getTodayString } from '@/lib/date';
+import { getTodayString, getKoreanDateString, getDayOfWeek, DEFAULT_TIMEZONE } from '@/lib/date';
 import { getPlanById } from '@/data/studyPlans';
-import { Word } from '@/types';
+import { Word, TimezoneOption, TIMEZONE_LABELS } from '@/types';
 import { useTheme } from '@/hooks/useTheme';
 
 export default function Dashboard() {
   const [isLearning, setIsLearning] = useState(false);
   const [selectedWordSetId, setSelectedWordSetId] = useState<string | null>(null);
-  const [isWrongWordsMode, setIsWrongWordsMode] = useState(false);
   const [isPlanMode, setIsPlanMode] = useState(false);
   const [customWords, setCustomWords] = useState<Word[] | null>(null);
+  const [modeName, setModeName] = useState<string | null>(null);
   const [editingWordSetId, setEditingWordSetId] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
   const [isCreatingWordSet, setIsCreatingWordSet] = useState(false);
@@ -44,42 +44,32 @@ export default function Dashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { theme, toggleTheme } = useTheme();
 
-  // 클라이언트에서만 날짜 설정 (브라우저 로컬 시간 사용)
-  useEffect(() => {
-    const now = new Date();
-
-    // 로컬 시간 기준 오늘 날짜 (YYYY-MM-DD)
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    setTodayString(`${year}-${month}-${day}`);
-
-    // 한국어 형식 날짜
-    setDateStr(now.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long',
-    }));
-  }, []);
-
   const profile = useStore((state) => state.profile);
+  const timezone = profile?.timezone || DEFAULT_TIMEZONE;
   const currentStreak = useStore((state) => state.currentStreak);
+
+  // 클라이언트에서만 날짜 설정 (타임존 기반)
+  useEffect(() => {
+    setTodayString(getTodayString(timezone));
+    setDateStr(getKoreanDateString(timezone));
+  }, [timezone]);
   const getTodayStats = useStore((state) => state.getTodayStats);
   const getWeeklyStats = useStore((state) => state.getWeeklyStats);
   const resetAll = useStore((state) => state.resetAll);
   const getCustomWordSets = useStore((state) => state.getCustomWordSets);
   const addCustomWordSet = useStore((state) => state.addCustomWordSet);
-  const getWrongWordsCount = useStore((state) => state.getWrongWordsCount);
+  const getReviewCount = useStore((state) => state.getReviewCount);
+  const getWordsForReview = useStore((state) => state.getWordsForReview);
   const getFullState = useStore((state) => state.getFullState);
   const importData = useStore((state) => state.importData);
+  const updateProfile = useStore((state) => state.updateProfile);
   const activeStudyPlan = useStore((state) => state.activeStudyPlan);
   const getPlanProgress = useStore((state) => state.getPlanProgress);
   const getTodayPlanWords = useStore((state) => state.getTodayPlanWords);
   const cancelStudyPlan = useStore((state) => state.cancelStudyPlan);
 
   const customWordSets = getCustomWordSets();
-  const wrongWordsCount = getWrongWordsCount();
+  const reviewCount = getReviewCount();
 
   const todayStats = getTodayStats();
   const weeklyStats = getWeeklyStats();
@@ -97,15 +87,29 @@ export default function Dashboard() {
   const handleFinishLearning = () => {
     setIsLearning(false);
     setSelectedWordSetId(null);
-    setIsWrongWordsMode(false);
     setIsPlanMode(false);
     setCustomWords(null);
+    setModeName(null);
   };
 
-  const handleStartWrongWordsReview = () => {
-    setIsWrongWordsMode(true);
-    setSelectedWordSetId('wrong-words');
-    setIsLearning(true);
+  // SM-2 기반 오늘의 복습 시작
+  const handleStartReview = () => {
+    const reviewProgress = getWordsForReview();
+    const reviewWordIds = reviewProgress.map(p => p.wordId);
+
+    // 모든 단어장에서 복습할 단어 찾기
+    const allWords = [
+      ...allWordSets.flatMap(ws => ws.words),
+      ...customWordSets.flatMap(ws => ws.words),
+    ];
+    const reviewWords = allWords.filter(w => reviewWordIds.includes(w.id));
+
+    if (reviewWords.length > 0) {
+      setCustomWords(reviewWords);
+      setSelectedWordSetId('review');
+      setModeName('오늘의 복습');
+      setIsLearning(true);
+    }
   };
 
   const handleStartPlanLearning = () => {
@@ -164,14 +168,14 @@ export default function Dashboard() {
 
   // 학습 화면
   if (isLearning && selectedWordSetId) {
-    const planName = isPlanMode && activeStudyPlan ? getPlanById(activeStudyPlan.planId)?.name : undefined;
+    const planNameStr = isPlanMode && activeStudyPlan ? getPlanById(activeStudyPlan.planId)?.name : undefined;
+    const displayModeName = modeName || (planNameStr ? `플랜: ${planNameStr}` : undefined);
     return (
       <LearningPage
         wordSetId={selectedWordSetId}
         onFinish={handleFinishLearning}
-        wrongWordsMode={isWrongWordsMode}
         customWords={customWords || undefined}
-        modeName={planName ? `플랜: ${planName}` : undefined}
+        modeName={displayModeName}
       />
     );
   }
@@ -250,26 +254,26 @@ export default function Dashboard() {
 
           {/* 미션 카드들 */}
           <div className="space-y-3">
-            {/* 1. 오답 복습 (최우선) */}
-            {wrongWordsCount > 0 && (
+            {/* 1. 오늘의 복습 (SM-2 기반) */}
+            {reviewCount > 0 && (
               <div
                 className="border-2 p-4 cursor-pointer hover:opacity-90 transition-opacity"
-                style={{ borderColor: 'var(--accent-error)', backgroundColor: 'var(--accent-error-light)' }}
-                onClick={handleStartWrongWordsReview}
+                style={{ borderColor: 'var(--accent-teal)', backgroundColor: 'var(--accent-teal-light)' }}
+                onClick={handleStartReview}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <XCircle size={28} style={{ color: 'var(--accent-error)' }} />
+                    <RefreshCw size={28} style={{ color: 'var(--accent-teal)' }} />
                     <div>
-                      <p className="font-semibold" style={{ color: 'var(--accent-error)' }}>
-                        틀린 단어 {wrongWordsCount}개 복습하기
+                      <p className="font-semibold" style={{ color: 'var(--accent-teal-dark)' }}>
+                        오늘의 복습 {reviewCount}개
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        우선 복습이 필요해요
+                        SM-2 알고리즘 기반 최적 타이밍
                       </p>
                     </div>
                   </div>
-                  <span className="tag-error">시작 →</span>
+                  <span className="tag-teal">시작 →</span>
                 </div>
               </div>
             )}
@@ -449,7 +453,8 @@ export default function Dashboard() {
                       const height = stat.wordsStudied > 0
                         ? Math.max((stat.wordsStudied / dailyGoal) * 100, 10)
                         : 0;
-                      const day = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][new Date(stat.date).getDay()];
+                      const dayIndex = getDayOfWeek(stat.date);
+                      const day = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][dayIndex];
                       const isToday = stat.date === todayString;
 
                       return (
@@ -703,6 +708,24 @@ export default function Dashboard() {
             </button>
             {isDataManagementOpen && (
               <div className="border-t border-foreground">
+                {/* 타임존 설정 */}
+                <div className="px-4 py-3 border-b border-foreground">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">타임존</span>
+                    <select
+                      value={timezone}
+                      onChange={(e) => updateProfile({ timezone: e.target.value as TimezoneOption })}
+                      className="px-3 py-1 text-sm border-2 border-foreground bg-background cursor-pointer hover:bg-secondary transition-colors"
+                    >
+                      {(Object.keys(TIMEZONE_LABELS) as TimezoneOption[]).map((tz) => (
+                        <option key={tz} value={tz}>
+                          {TIMEZONE_LABELS[tz]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {/* 데이터 내보내기/가져오기 */}
                 <div className="grid grid-cols-2 divide-x divide-foreground">
                   <button
                     className="py-4 tracking-wider text-sm hover:bg-foreground hover:text-background transition-colors"

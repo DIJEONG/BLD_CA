@@ -5,6 +5,7 @@ import { useStore } from '@/store/useStore';
 import { allWordSets } from '@/data/words';
 import { Word } from '@/types';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { getTodayString, getDateInTimezone, DEFAULT_TIMEZONE } from '@/lib/date';
 
 export default function LearningCalendar() {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
@@ -12,24 +13,21 @@ export default function LearningCalendar() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const getMonthlyStats = useStore((state) => state.getMonthlyStats);
+  const getReviewCountByDate = useStore((state) => state.getReviewCountByDate);
   const sessions = useStore((state) => state.sessions);
   const customWordSets = useStore((state) => state.customWordSets);
   const profile = useStore((state) => state.profile);
   const dailyGoal = profile?.dailyWordCount || 20;
+  const timezone = profile?.timezone || DEFAULT_TIMEZONE;
 
-  // 클라이언트에서만 날짜 설정 (브라우저 로컬 시간 사용)
+  // 클라이언트에서만 날짜 설정 (타임존 기반)
   useEffect(() => {
-    const now = new Date();
-
-    // 로컬 시간 기준 오늘 날짜 (YYYY-MM-DD)
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
+    const todayStr = getTodayString(timezone);
+    const todayDate = getDateInTimezone(timezone);
 
     setToday(todayStr);
-    setCurrentDate(now);
-  }, []);
+    setCurrentDate(todayDate);
+  }, [timezone]);
 
   const year = currentDate?.getFullYear() ?? new Date().getFullYear();
   const month = currentDate ? currentDate.getMonth() + 1 : new Date().getMonth() + 1;
@@ -45,26 +43,28 @@ export default function LearningCalendar() {
     const daysInMonth = lastDay.getDate();
     const startDayOfWeek = firstDay.getDay(); // 0 = Sunday
 
-    const days: Array<{ date: number | null; dateStr: string; wordsStudied: number }> = [];
+    const days: Array<{ date: number | null; dateStr: string; wordsStudied: number; reviewCount: number }> = [];
 
     // 이전 달 빈 칸
     for (let i = 0; i < startDayOfWeek; i++) {
-      days.push({ date: null, dateStr: '', wordsStudied: 0 });
+      days.push({ date: null, dateStr: '', wordsStudied: 0, reviewCount: 0 });
     }
 
     // 현재 달 날짜들
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const stats = monthlyStats[dateStr];
+      const reviewCount = getReviewCountByDate(dateStr);
       days.push({
         date: day,
         dateStr,
         wordsStudied: stats?.wordsStudied || 0,
+        reviewCount,
       });
     }
 
     return days;
-  }, [year, month, monthlyStats]);
+  }, [year, month, monthlyStats, getReviewCountByDate]);
 
   // 선택된 날짜의 학습 단어 목록
   const selectedDateWords = useMemo(() => {
@@ -188,11 +188,21 @@ export default function LearningCalendar() {
       <div className="grid grid-cols-7">
         {calendarData.map((day, index) => {
           const isToday = day.dateStr === today;
+          const isFuture = today && day.dateStr > today;
           const hasActivity = day.wordsStudied > 0;
+          const hasReview = day.reviewCount > 0;
           const achievedGoal = day.wordsStudied >= dailyGoal;
           const isSunday = index % 7 === 0;
           const isSaturday = index % 7 === 6;
           const isSelected = day.dateStr === selectedDate;
+
+          // 배경색 결정
+          let bgStyle = {};
+          if (hasActivity && achievedGoal) {
+            bgStyle = { backgroundColor: 'var(--accent-teal-light)' };
+          } else if (isFuture && hasReview) {
+            bgStyle = { backgroundColor: 'var(--accent-amber-light)' };
+          }
 
           return (
             <div
@@ -205,7 +215,7 @@ export default function LearningCalendar() {
                 ${hasActivity ? 'cursor-pointer hover:opacity-80' : ''}
                 ${isSelected ? 'ring-2 ring-inset ring-foreground' : ''}
               `}
-              style={hasActivity && achievedGoal ? { backgroundColor: 'var(--accent-teal-light)' } : {}}
+              style={bgStyle}
               onClick={() => day.date && handleDateClick(day.dateStr, hasActivity)}
             >
               {day.date && (
@@ -222,7 +232,27 @@ export default function LearningCalendar() {
                     {day.date}
                   </span>
 
-                  {/* 학습 단어 수 */}
+                  {/* 미래 복습 예정 (좌하단) */}
+                  {isFuture && hasReview && (
+                    <div
+                      className="absolute bottom-1 left-1 text-[10px] sm:text-xs font-mono font-bold"
+                      style={{ color: 'var(--accent-amber)' }}
+                    >
+                      ●{day.reviewCount}
+                    </div>
+                  )}
+
+                  {/* 오늘 복습 예정 (좌하단) */}
+                  {isToday && hasReview && (
+                    <div
+                      className="absolute bottom-1 left-1 text-[10px] sm:text-xs font-mono font-bold"
+                      style={{ color: 'var(--accent-error)' }}
+                    >
+                      ●{day.reviewCount}
+                    </div>
+                  )}
+
+                  {/* 학습 완료 단어 수 (우하단) */}
                   {hasActivity && (
                     <div
                       className="absolute bottom-1 right-1 text-[10px] sm:text-xs font-mono font-bold"
@@ -278,7 +308,11 @@ export default function LearningCalendar() {
       )}
 
       {/* 범례 */}
-      <div className="border-t border-foreground px-4 py-2 flex justify-end gap-4 text-xs">
+      <div className="border-t border-foreground px-4 py-2 flex flex-wrap justify-end gap-3 sm:gap-4 text-xs">
+        <div className="flex items-center gap-1">
+          <span className="font-mono" style={{ color: 'var(--accent-amber)' }}>●5</span>
+          <span className="text-muted-foreground">복습 예정</span>
+        </div>
         <div className="flex items-center gap-1">
           <div
             className="w-3 h-3 border border-foreground"
@@ -288,7 +322,7 @@ export default function LearningCalendar() {
         </div>
         <div className="flex items-center gap-1">
           <span className="font-mono" style={{ color: 'var(--accent-amber)' }}>15</span>
-          <span className="text-muted-foreground">미달성</span>
+          <span className="text-muted-foreground">학습 완료</span>
         </div>
       </div>
     </div>

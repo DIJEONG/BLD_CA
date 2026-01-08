@@ -18,12 +18,25 @@ export interface WordSet {
   words: Word[];
 }
 
+// 타임존 옵션
+export type TimezoneOption = 'America/Toronto' | 'Asia/Seoul' | 'Asia/Tokyo' | 'America/Los_Angeles' | 'America/New_York' | 'Europe/London';
+
+export const TIMEZONE_LABELS: Record<TimezoneOption, string> = {
+  'America/Toronto': '캐나다 (토론토)',
+  'Asia/Seoul': '한국 (서울)',
+  'Asia/Tokyo': '일본 (도쿄)',
+  'America/Los_Angeles': '미국 서부 (LA)',
+  'America/New_York': '미국 동부 (뉴욕)',
+  'Europe/London': '영국 (런던)',
+};
+
 // 사용자 프로필
 export interface UserProfile {
   nickname: string;
   gradeLevel: string;
   dailyWordCount: number;
   createdAt: string;
+  timezone?: TimezoneOption;  // 타임존 설정 (기본: America/Toronto)
 }
 
 // Leitner Box 타입 (1~5 단계)

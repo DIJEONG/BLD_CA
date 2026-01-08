@@ -19,7 +19,7 @@ import {
   efToLeitnerBox,
   SM2_DEFAULTS,
 } from '@/lib/sm2';
-import { getTodayString, getDaysDiff, getCanadaDate } from '@/lib/date';
+import { getTodayString, getDaysDiff, getDateInTimezone, DEFAULT_TIMEZONE } from '@/lib/date';
 import { allWordSets, getWordsByIds } from '@/data/words';
 import { getPlanById, generatePlanWords } from '@/data/studyPlans';
 
@@ -36,11 +36,8 @@ interface StoreActions {
   // 복습 단어 조회
   getWordsForReview: () => WordProgress[];
   getReviewCount: () => number;
-
-  // 오답 단어 조회
-  getWrongWords: () => WordProgress[];
-  getWrongWordsCount: () => number;
-  clearWrongCount: (wordId: string) => void;
+  getReviewCountByDate: (date: string) => number;
+  getReviewSchedule: (days: number) => Record<string, number>;
 
   // 세션
   addSession: (session: LearningSession) => void;
@@ -195,42 +192,36 @@ export const useStore = create<AppState & StoreActions>()(
         return get().getWordsForReview().length;
       },
 
-      // 오답 단어 목록 (wrongCount > 0, 많이 틀린 순)
-      // 실제로 존재하는 단어만 반환 (삭제된 단어 제외)
-      getWrongWords: () => {
+      // 특정 날짜의 복습 단어 개수
+      getReviewCountByDate: (date: string) => {
         const allProgress = Object.values(get().wordProgress);
-        const builtInWordIds = new Set(
-          allWordSets.flatMap(ws => ws.words.map(w => w.id))
-        );
-        const customWordIds = new Set(
-          get().customWordSets.flatMap(ws => ws.words.map(w => w.id))
-        );
-
-        return allProgress
-          .filter((p) => {
-            // wrongCount > 0 이고 실제로 존재하는 단어만
-            if ((p.wrongCount || 0) <= 0) return false;
-            return builtInWordIds.has(p.wordId) || customWordIds.has(p.wordId);
-          })
-          .sort((a, b) => (b.wrongCount || 0) - (a.wrongCount || 0));
+        return allProgress.filter(
+          (p) => p.nextReviewDate === date && p.attemptCount > 0
+        ).length;
       },
 
-      // 오답 단어 개수
-      getWrongWordsCount: () => {
-        return get().getWrongWords().length;
-      },
+      // 향후 N일간 복습 일정 (날짜별 단어 수)
+      getReviewSchedule: (days: number) => {
+        const allProgress = Object.values(get().wordProgress);
+        const schedule: Record<string, number> = {};
 
-      // 오답 카운트 초기화 (복습 완료 시)
-      clearWrongCount: (wordId) => {
-        const current = get().wordProgress[wordId];
-        if (current) {
-          set((state) => ({
-            wordProgress: {
-              ...state.wordProgress,
-              [wordId]: { ...current, wrongCount: 0 },
-            },
-          }));
+        // 오늘부터 N일간의 날짜 생성
+        const today = new Date();
+        for (let i = 0; i <= days; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() + i);
+          const dateStr = date.toISOString().split('T')[0];
+          schedule[dateStr] = 0;
         }
+
+        // 각 단어의 복습 예정일 카운트
+        allProgress.forEach((p) => {
+          if (p.attemptCount > 0 && p.nextReviewDate && schedule.hasOwnProperty(p.nextReviewDate)) {
+            schedule[p.nextReviewDate]++;
+          }
+        });
+
+        return schedule;
       },
 
       addSession: (session) => {
@@ -281,12 +272,12 @@ export const useStore = create<AppState & StoreActions>()(
 
       getWeeklyStats: () => {
         const stats: DailyStats[] = [];
-        const today = getCanadaDate();
+        const timezone = get().profile?.timezone || DEFAULT_TIMEZONE;
+        const today = getDateInTimezone(timezone);
 
         for (let i = 6; i >= 0; i--) {
           const date = new Date(today);
           date.setDate(date.getDate() - i);
-          // 캐나다 시간대 기준 날짜 문자열
           const dateStr = date.toLocaleDateString('en-CA');
 
           stats.push(
