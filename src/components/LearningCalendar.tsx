@@ -76,16 +76,35 @@ export default function LearningCalendar({ onStartMissedReview }: LearningCalend
     return days;
   }, [year, month, monthlyStats, getReviewCountByDate]);
 
-  // 선택된 날짜의 타입 (past: 학습 기록, review: 복습 예정)
+  // 선택된 날짜에 학습 기록이 있는지 확인
+  const selectedDateHasStudy = useMemo(() => {
+    if (!selectedDate) return false;
+    const dateSessions = sessions.filter(s => s.date === selectedDate);
+    return dateSessions.length > 0 && dateSessions.some(s => s.answers && s.answers.length > 0);
+  }, [selectedDate, sessions]);
+
+  // 선택된 날짜의 타입 결정
+  // - 학습 기록이 있으면 'studied'
+  // - 과거이고 학습 기록 없으면 null
+  // - 오늘/미래이고 복습 예정이 있으면 'review'
   const selectedDateType = useMemo(() => {
     if (!selectedDate || !today) return null;
-    if (selectedDate < today) return 'past';
-    return 'review'; // 오늘 또는 미래
-  }, [selectedDate, today]);
 
-  // 선택된 날짜의 학습 단어 목록 (과거)
+    // 학습 기록이 있으면 우선 표시
+    if (selectedDateHasStudy) return 'studied';
+
+    // 오늘 또는 미래이고 복습 예정이 있으면
+    if (selectedDate >= today) {
+      const reviewCount = getReviewCountByDate(selectedDate);
+      if (reviewCount > 0) return 'review';
+    }
+
+    return null;
+  }, [selectedDate, today, selectedDateHasStudy, getReviewCountByDate]);
+
+  // 선택된 날짜의 학습 단어 목록
   const selectedDateStudiedWords = useMemo(() => {
-    if (!selectedDate || selectedDateType !== 'past') return [];
+    if (!selectedDate || selectedDateType !== 'studied') return [];
 
     const dateSessions = sessions.filter(s => s.date === selectedDate);
     if (dateSessions.length === 0) return [];
@@ -94,12 +113,14 @@ export default function LearningCalendar({ onStartMissedReview }: LearningCalend
     const wordResults: { wordId: string; knew: boolean }[] = [];
 
     dateSessions.forEach(session => {
-      session.answers.forEach(answer => {
-        if (!wordIds.has(answer.wordId)) {
-          wordIds.add(answer.wordId);
-          wordResults.push({ wordId: answer.wordId, knew: answer.knew });
-        }
-      });
+      if (session.answers) {
+        session.answers.forEach(answer => {
+          if (!wordIds.has(answer.wordId)) {
+            wordIds.add(answer.wordId);
+            wordResults.push({ wordId: answer.wordId, knew: answer.knew });
+          }
+        });
+      }
     });
 
     const allWords = [
@@ -432,8 +453,8 @@ export default function LearningCalendar({ onStartMissedReview }: LearningCalend
         })}
       </div>
 
-      {/* 선택된 날짜의 학습 기록 (과거) */}
-      {selectedDate && selectedDateType === 'past' && selectedDateStudiedWords.length > 0 && (() => {
+      {/* 선택된 날짜의 학습 기록 */}
+      {selectedDate && selectedDateType === 'studied' && selectedDateStudiedWords.length > 0 && (() => {
         const stats = monthlyStats[selectedDate];
         const wordsStudied = stats?.wordsStudied || selectedDateStudiedWords.length;
         const correctCount = selectedDateStudiedWords.filter(w => w.knew).length;
