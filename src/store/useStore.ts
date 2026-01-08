@@ -37,6 +37,7 @@ interface StoreActions {
   getWordsForReview: () => WordProgress[];
   getReviewCount: () => number;
   getReviewCountByDate: (date: string) => number;
+  getReviewWordIdsByDate: (date: string) => string[];
   getReviewSchedule: (days: number) => Record<string, number>;
 
   // 세션
@@ -198,6 +199,14 @@ export const useStore = create<AppState & StoreActions>()(
         return allProgress.filter(
           (p) => p.nextReviewDate === date && p.attemptCount > 0
         ).length;
+      },
+
+      // 특정 날짜의 복습 단어 ID 목록
+      getReviewWordIdsByDate: (date: string) => {
+        const allProgress = Object.values(get().wordProgress);
+        return allProgress
+          .filter((p) => p.nextReviewDate === date && p.attemptCount > 0)
+          .map((p) => p.wordId);
       },
 
       // 향후 N일간 복습 일정 (날짜별 단어 수)

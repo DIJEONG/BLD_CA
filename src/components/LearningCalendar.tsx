@@ -14,6 +14,8 @@ export default function LearningCalendar() {
 
   const getMonthlyStats = useStore((state) => state.getMonthlyStats);
   const getReviewCountByDate = useStore((state) => state.getReviewCountByDate);
+  const getReviewWordIdsByDate = useStore((state) => state.getReviewWordIdsByDate);
+  const wordProgress = useStore((state) => state.wordProgress);
   const sessions = useStore((state) => state.sessions);
   const customWordSets = useStore((state) => state.customWordSets);
   const profile = useStore((state) => state.profile);
@@ -66,15 +68,20 @@ export default function LearningCalendar() {
     return days;
   }, [year, month, monthlyStats, getReviewCountByDate]);
 
-  // 선택된 날짜의 학습 단어 목록
-  const selectedDateWords = useMemo(() => {
-    if (!selectedDate) return [];
+  // 선택된 날짜의 타입 (past: 학습 기록, review: 복습 예정)
+  const selectedDateType = useMemo(() => {
+    if (!selectedDate || !today) return null;
+    if (selectedDate < today) return 'past';
+    return 'review'; // 오늘 또는 미래
+  }, [selectedDate, today]);
 
-    // 해당 날짜의 세션들
+  // 선택된 날짜의 학습 단어 목록 (과거)
+  const selectedDateStudiedWords = useMemo(() => {
+    if (!selectedDate || selectedDateType !== 'past') return [];
+
     const dateSessions = sessions.filter(s => s.date === selectedDate);
     if (dateSessions.length === 0) return [];
 
-    // 모든 단어 ID 수집 (중복 제거)
     const wordIds = new Set<string>();
     const wordResults: { wordId: string; knew: boolean }[] = [];
 
@@ -87,7 +94,6 @@ export default function LearningCalendar() {
       });
     });
 
-    // 단어 ID로 단어 정보 조회
     const allWords = [
       ...allWordSets.flatMap(ws => ws.words),
       ...customWordSets.flatMap(ws => ws.words),
@@ -100,7 +106,41 @@ export default function LearningCalendar() {
       word: wordMap.get(result.wordId),
       knew: result.knew,
     })).filter(item => item.word !== undefined) as { word: Word; knew: boolean }[];
-  }, [selectedDate, sessions, customWordSets]);
+  }, [selectedDate, selectedDateType, sessions, customWordSets]);
+
+  // 선택된 날짜의 복습 예정 단어 목록 (오늘/미래)
+  const selectedDateReviewWords = useMemo(() => {
+    if (!selectedDate || selectedDateType !== 'review') return [];
+
+    const reviewWordIds = getReviewWordIdsByDate(selectedDate);
+    if (reviewWordIds.length === 0) return [];
+
+    const allWords = [
+      ...allWordSets.flatMap(ws => ws.words),
+      ...customWordSets.flatMap(ws => ws.words),
+    ];
+
+    const wordMap = new Map<string, Word>();
+    allWords.forEach(w => wordMap.set(w.id, w));
+
+    return reviewWordIds.map(wordId => {
+      const word = wordMap.get(wordId);
+      const progress = wordProgress[wordId];
+      return {
+        word,
+        interval: progress?.interval || 1,
+        box: progress?.box || 1,
+        attemptCount: progress?.attemptCount || 0,
+        correctCount: progress?.correctCount || 0,
+      };
+    }).filter(item => item.word !== undefined) as {
+      word: Word;
+      interval: number;
+      box: number;
+      attemptCount: number;
+      correctCount: number;
+    }[];
+  }, [selectedDate, selectedDateType, getReviewWordIdsByDate, customWordSets, wordProgress]);
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(year, month - 2, 1));
@@ -110,8 +150,8 @@ export default function LearningCalendar() {
     setCurrentDate(new Date(year, month, 1));
   };
 
-  const handleDateClick = (dateStr: string, hasActivity: boolean) => {
-    if (hasActivity) {
+  const handleDateClick = (dateStr: string, hasActivity: boolean, hasReview: boolean) => {
+    if (hasActivity || hasReview) {
       setSelectedDate(selectedDate === dateStr ? null : dateStr);
     }
   };
@@ -204,6 +244,8 @@ export default function LearningCalendar() {
             bgStyle = { backgroundColor: 'var(--accent-amber-light)' };
           }
 
+          const isClickable = hasActivity || hasReview;
+
           return (
             <div
               key={index}
@@ -212,11 +254,11 @@ export default function LearningCalendar() {
                 ${index % 7 !== 6 ? 'border-r border-foreground' : ''}
                 ${index < calendarData.length - 7 || (index >= calendarData.length - 7 && Math.floor(index / 7) < Math.floor((calendarData.length - 1) / 7)) ? 'border-b border-foreground' : ''}
                 ${isToday ? 'bg-secondary' : ''}
-                ${hasActivity ? 'cursor-pointer hover:opacity-80' : ''}
+                ${isClickable ? 'cursor-pointer hover:opacity-80' : ''}
                 ${isSelected ? 'ring-2 ring-inset ring-foreground' : ''}
               `}
               style={bgStyle}
-              onClick={() => day.date && handleDateClick(day.dateStr, hasActivity)}
+              onClick={() => day.date && handleDateClick(day.dateStr, hasActivity, hasReview)}
             >
               {day.date && (
                 <>
@@ -268,12 +310,12 @@ export default function LearningCalendar() {
         })}
       </div>
 
-      {/* 선택된 날짜의 단어 목록 */}
-      {selectedDate && selectedDateWords.length > 0 && (
+      {/* 선택된 날짜의 학습 기록 (과거) */}
+      {selectedDate && selectedDateType === 'past' && selectedDateStudiedWords.length > 0 && (
         <div className="border-t-2 border-foreground">
           <div className="border-b border-foreground px-4 py-2 flex justify-between items-center bg-secondary">
             <span className="text-sm font-semibold">
-              {selectedDate} 학습 단어 ({selectedDateWords.length}개)
+              {selectedDate} 학습 기록 ({selectedDateStudiedWords.length}개)
             </span>
             <button
               onClick={() => setSelectedDate(null)}
@@ -283,7 +325,7 @@ export default function LearningCalendar() {
             </button>
           </div>
           <div className="max-h-60 overflow-y-auto">
-            {selectedDateWords.map(({ word, knew }, index) => (
+            {selectedDateStudiedWords.map(({ word, knew }, index) => (
               <div
                 key={word.id}
                 className={`flex items-center justify-between px-4 py-2 ${
@@ -303,6 +345,59 @@ export default function LearningCalendar() {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* 선택된 날짜의 복습 예정 (오늘/미래) */}
+      {selectedDate && selectedDateType === 'review' && selectedDateReviewWords.length > 0 && (
+        <div className="border-t-2 border-foreground">
+          <div
+            className="border-b border-foreground px-4 py-2 flex justify-between items-center"
+            style={{ backgroundColor: 'var(--accent-amber-light)' }}
+          >
+            <span className="text-sm font-semibold">
+              {selectedDate === today ? '오늘' : selectedDate} 복습 예정 ({selectedDateReviewWords.length}개)
+            </span>
+            <button
+              onClick={() => setSelectedDate(null)}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+            >
+              닫기 <X size={12} />
+            </button>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {selectedDateReviewWords.map(({ word, interval, box, attemptCount, correctCount }, index) => {
+              const accuracy = attemptCount > 0 ? Math.round((correctCount / attemptCount) * 100) : 0;
+              return (
+                <div
+                  key={word.id}
+                  className={`flex items-center justify-between px-4 py-2 ${
+                    index > 0 ? 'border-t border-border' : ''
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-sm">{word.english}</span>
+                    <span className="text-muted-foreground mx-2">—</span>
+                    <span className="text-muted-foreground text-sm">{word.korean}</span>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2 shrink-0">
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {accuracy}%
+                    </span>
+                    <span
+                      className="text-xs font-mono px-1.5 py-0.5 rounded"
+                      style={{
+                        backgroundColor: box >= 4 ? 'var(--accent-teal-light)' : box >= 2 ? 'var(--accent-amber-light)' : 'var(--accent-error-light)',
+                        color: box >= 4 ? 'var(--accent-teal-dark)' : box >= 2 ? 'var(--accent-amber)' : 'var(--accent-error)',
+                      }}
+                    >
+                      Lv.{box}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
