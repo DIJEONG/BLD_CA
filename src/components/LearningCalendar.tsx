@@ -433,43 +433,86 @@ export default function LearningCalendar({ onStartMissedReview }: LearningCalend
       </div>
 
       {/* 선택된 날짜의 학습 기록 (과거) */}
-      {selectedDate && selectedDateType === 'past' && selectedDateStudiedWords.length > 0 && (
-        <div className="border-t-2 border-foreground">
-          <div className="border-b border-foreground px-4 py-2 flex justify-between items-center bg-secondary">
-            <span className="text-sm font-semibold">
-              {selectedDate} 학습 기록 ({selectedDateStudiedWords.length}개)
-            </span>
-            <button
-              onClick={() => setSelectedDate(null)}
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+      {selectedDate && selectedDateType === 'past' && selectedDateStudiedWords.length > 0 && (() => {
+        const stats = monthlyStats[selectedDate];
+        const wordsStudied = stats?.wordsStudied || selectedDateStudiedWords.length;
+        const correctCount = selectedDateStudiedWords.filter(w => w.knew).length;
+        const wrongCount = selectedDateStudiedWords.filter(w => !w.knew).length;
+        const accuracy = selectedDateStudiedWords.length > 0
+          ? Math.round((correctCount / selectedDateStudiedWords.length) * 100)
+          : 0;
+        const achievedGoal = wordsStudied >= dailyGoal;
+
+        return (
+          <div className="border-t-2 border-foreground">
+            <div
+              className="border-b border-foreground px-4 py-2 flex justify-between items-center"
+              style={achievedGoal ? { backgroundColor: 'var(--accent-teal-light)' } : { backgroundColor: 'var(--secondary)' }}
             >
-              닫기 <X size={12} />
-            </button>
-          </div>
-          <div className="max-h-60 overflow-y-auto">
-            {selectedDateStudiedWords.map(({ word, knew }, index) => (
-              <div
-                key={word.id}
-                className={`flex items-center justify-between px-4 py-2 ${
-                  index > 0 ? 'border-t border-border' : ''
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <span className="font-semibold text-sm">{word.english}</span>
-                  <span className="text-muted-foreground mx-2">—</span>
-                  <span className="text-muted-foreground text-sm">{word.korean}</span>
-                </div>
-                <span
-                  className="text-xs font-mono ml-2"
-                  style={{ color: knew ? 'var(--accent-success)' : 'var(--accent-error)' }}
-                >
-                  {knew ? '○' : '✕'}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">
+                  {selectedDate} 학습 기록
                 </span>
+                {achievedGoal && (
+                  <span
+                    className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                    style={{ backgroundColor: 'var(--accent-teal)', color: 'white' }}
+                  >
+                    목표 달성
+                  </span>
+                )}
               </div>
-            ))}
+              <button
+                onClick={() => setSelectedDate(null)}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+              >
+                닫기 <X size={12} />
+              </button>
+            </div>
+            {/* 통계 요약 */}
+            <div className="grid grid-cols-4 border-b border-foreground text-center text-xs">
+              <div className="py-2 border-r border-foreground">
+                <p className="text-muted-foreground">학습</p>
+                <p className="font-mono font-bold">{wordsStudied}</p>
+              </div>
+              <div className="py-2 border-r border-foreground">
+                <p style={{ color: 'var(--accent-success)' }}>정답</p>
+                <p className="font-mono font-bold">{correctCount}</p>
+              </div>
+              <div className="py-2 border-r border-foreground">
+                <p style={{ color: 'var(--accent-error)' }}>오답</p>
+                <p className="font-mono font-bold">{wrongCount}</p>
+              </div>
+              <div className="py-2">
+                <p className="text-muted-foreground">정답률</p>
+                <p className="font-mono font-bold">{accuracy}%</p>
+              </div>
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              {selectedDateStudiedWords.map(({ word, knew }, index) => (
+                <div
+                  key={word.id}
+                  className={`flex items-center justify-between px-4 py-2 ${
+                    index > 0 ? 'border-t border-border' : ''
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-sm">{word.english}</span>
+                    <span className="text-muted-foreground mx-2">—</span>
+                    <span className="text-muted-foreground text-sm">{word.korean}</span>
+                  </div>
+                  <span
+                    className="text-xs font-mono ml-2"
+                    style={{ color: knew ? 'var(--accent-success)' : 'var(--accent-error)' }}
+                  >
+                    {knew ? '○' : '✕'}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 선택된 날짜의 복습 예정 (오늘/미래) */}
       {selectedDate && selectedDateType === 'review' && selectedDateReviewWords.length > 0 && (
