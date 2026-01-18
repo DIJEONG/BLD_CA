@@ -11,6 +11,7 @@ const gradeLevels = [
   { value: 'grade-6-8', label: '6-8', description: 'Grade 6 - 8' },
   { value: 'grade-9-12', label: '9-12', description: 'Grade 9 - 12' },
   { value: 'adult', label: 'Adult', description: 'College & Beyond' },
+  { value: 'celpip', label: 'CELPIP', description: 'Canadian PR Preparation' },
 ];
 
 const dailyWordOptions = [10, 20, 30, 50];

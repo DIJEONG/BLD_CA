@@ -125,6 +125,36 @@ export const studyPlanTemplates: StudyPlanTemplate[] = [
     wordsPerDay: 7,
     recommended: true,
   },
+
+  // CELPIP (캐나다 PR 준비)
+  {
+    id: 'celpip-30',
+    name: '30일 CELPIP 기초',
+    description: 'CLB 5 목표, 핵심 이민 영어',
+    totalDays: 30,
+    totalWords: 210,
+    gradeLevel: 'celpip',
+    wordsPerDay: 7,
+  },
+  {
+    id: 'celpip-60',
+    name: '60일 CELPIP 완성',
+    description: 'CLB 7 목표, Express Entry 준비',
+    totalDays: 60,
+    totalWords: 420,
+    gradeLevel: 'celpip',
+    wordsPerDay: 7,
+    recommended: true,
+  },
+  {
+    id: 'celpip-90',
+    name: '90일 CELPIP 마스터',
+    description: 'CLB 9+ 목표, 고득점 달성',
+    totalDays: 90,
+    totalWords: 630,
+    gradeLevel: 'celpip',
+    wordsPerDay: 7,
+  },
 ];
 
 // 그레이드에 맞는 플랜 목록 가져오기
@@ -166,6 +196,7 @@ export function getGradeLevelLabel(gradeLevel: string): string {
     'grade-6-8': '중학생',
     'grade-9-12': '고등학생',
     'adult': '성인',
+    'celpip': 'CELPIP (캐나다 PR)',
   };
   return labels[gradeLevel] || gradeLevel;
 }

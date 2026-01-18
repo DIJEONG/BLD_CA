@@ -1,4 +1,5 @@
 import { WordSet } from '@/types';
+import { celpipWordSets } from './celpipWords';
 
 // ========================================
 // Grade 3-5 단어장
@@ -2015,6 +2016,8 @@ export const allWordSets: WordSet[] = [
   // 중급/고급
   intermediateWords,
   advancedWords,
+  // CELPIP (캐나다 PR 준비)
+  ...celpipWordSets,
 ];
 
 // 학년에 맞는 단어장 찾기
