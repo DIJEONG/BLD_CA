@@ -41,8 +41,18 @@ export default function Dashboard() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(true);
   const [isOtherWordSetsOpen, setIsOtherWordSetsOpen] = useState(false);
   const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
+  const [showGradeSelector, setShowGradeSelector] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { theme, toggleTheme } = useTheme();
+
+  const gradeLevels = [
+    { value: 'grade-k2', label: 'K-2', description: 'Kindergarten - Grade 2' },
+    { value: 'grade-3-5', label: '3-5', description: 'Grade 3 - 5' },
+    { value: 'grade-6-8', label: '6-8', description: 'Grade 6 - 8' },
+    { value: 'grade-9-12', label: '9-12', description: 'Grade 9 - 12' },
+    { value: 'adult', label: 'Adult', description: 'College & Beyond' },
+    { value: 'celpip', label: 'CELPIP', description: 'Canadian PR Preparation' },
+  ];
 
   const profile = useStore((state) => state.profile);
   const timezone = profile?.timezone || DEFAULT_TIMEZONE;
@@ -224,6 +234,12 @@ export default function Dashboard() {
               </button>
               <button
                 className="tag hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                onClick={() => setShowGradeSelector(true)}
+              >
+                GRADE
+              </button>
+              <button
+                className="tag hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                 onClick={() => {
                   if (confirm('모든 데이터를 초기화할까요?')) {
                     resetAll();
@@ -236,6 +252,54 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* 학년 변경 모달 */}
+      {showGradeSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background border-2 border-foreground w-full max-w-md">
+            <div className="border-b-2 border-foreground px-6 py-4">
+              <h2 className="text-xl font-serif font-bold">학년 변경</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                현재: {gradeLevels.find(g => g.value === profile?.gradeLevel)?.label || profile?.gradeLevel}
+              </p>
+            </div>
+            <div className="p-4">
+              <div className="space-y-0">
+                {gradeLevels.map((level, index) => (
+                  <button
+                    key={level.value}
+                    className={`w-full p-3 border-2 border-foreground font-medium transition-colors text-left ${
+                      index > 0 ? 'border-t-0' : ''
+                    } ${
+                      profile?.gradeLevel === level.value
+                        ? 'bg-foreground text-background'
+                        : 'bg-background text-foreground hover:bg-secondary'
+                    }`}
+                    onClick={() => {
+                      updateProfile({ gradeLevel: level.value });
+                      setShowGradeSelector(false);
+                    }}
+                  >
+                    <span className="font-bold font-mono">{level.label}</span>
+                    <span className={`ml-2 text-sm ${profile?.gradeLevel === level.value ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                      {level.description}
+                    </span>
+                    {level.value === 'celpip' && profile?.gradeLevel !== 'celpip' && (
+                      <span className="ml-2 tag-teal text-xs">NEW</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="w-full mt-4 border-2 border-foreground py-3 font-medium tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                onClick={() => setShowGradeSelector(false)}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* ═══════════════════════════════════════════════════════════════
